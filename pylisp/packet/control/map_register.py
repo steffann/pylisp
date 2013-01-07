@@ -6,24 +6,14 @@ Created on 6 jan. 2013
 from base import LISPControlPacket
 from bitstring import ConstBitStream, BitArray
 from pylisp.packet.control import type_registry
+from pylisp.packet.control.constants import KEY_ID_HMAC_SHA_1_96, \
+    KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE
 from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
 import hashlib
 import hmac
 
 
-# The following Key ID values are defined by this specification as used
-# in any packet type that references a Key ID field:
-#
-#
-# Name                 Number          Defined in
-#-----------------------------------------------
-# None                 0               n/a
-# HMAC-SHA-1-96        1               [RFC2404]
-# HMAC-SHA-256-128     2               [RFC6234]
-
-KEY_ID_NONE = 0
-KEY_ID_HMAC_SHA_1_96 = 1
-KEY_ID_HMAC_SHA_256_128 = 2
+__all__ = ['LISPMapRegisterPacket']
 
 
 class LISPMapRegisterPacket(LISPControlPacket):
