@@ -7,7 +7,6 @@ from base import LISPControlPacket
 from bitstring import ConstBitStream, BitArray
 from pylisp.packet.control import type_registry
 from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
-from pylisp.utils.afi import get_bitstream_for_afi_address
 
 
 class LISPMapReplyPacket(LISPControlPacket):
@@ -155,7 +154,7 @@ class LISPMapReplyPacket(LISPControlPacket):
         bitstream += BitArray('uint:8=%d' % len(self.records))
 
         # Add the nonce
-        bitstream += BitArray(hex='0x%s' % self.nonce.encode('hex'))
+        bitstream += BitArray(hex=self.nonce.encode('hex'))
 
         # Add the map-reply records
         for record in self.records:

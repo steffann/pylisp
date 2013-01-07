@@ -179,11 +179,11 @@ class LISPLocatorRecord(object):
         self.sanitize()
 
         # Start with the priorities and weights
-        bitstream = BitArray(('uint:8=%d, uint:8=%d, uint:8=%d, ' +
-                              'uint:8=%d') % (self.priority,
-                                              self.weight,
-                                              self.m_priority,
-                                              self.m_weight))
+        bitstream = BitArray('uint:8=%d, uint:8=%d, uint:8=%d, '
+                             'uint:8=%d' % (self.priority,
+                                            self.weight,
+                                            self.m_priority,
+                                            self.m_weight))
 
         # Add padding
         bitstream += BitArray(13)

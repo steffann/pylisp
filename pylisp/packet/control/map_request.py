@@ -246,13 +246,13 @@ class LISPMapRequestPacket(LISPControlPacket):
         bitstream = BitArray('uint:4=%d' % self.message_type)
 
         # Add the flags
-        bitstream += BitArray(('bool=%d, bool=%d, bool=%d, bool=%d, ' +
-                              'bool=%d, bool=%d') % (self.authoritative,
-                                                     self.map_data_present,
-                                                     self.probe,
-                                                     self.smr,
-                                                     self.pitr,
-                                                     self.smr_invoked))
+        bitstream += BitArray('bool=%d, bool=%d, bool=%d, bool=%d, '
+                              'bool=%d, bool=%d' % (self.authoritative,
+                                                    self.map_data_present,
+                                                    self.probe,
+                                                    self.smr,
+                                                    self.pitr,
+                                                    self.smr_invoked))
 
         # Add padding
         bitstream += BitArray(9)
@@ -264,7 +264,7 @@ class LISPMapRequestPacket(LISPControlPacket):
         bitstream += BitArray('uint:8=%d' % len(self.eid_prefixes))
 
         # Add the nonce
-        bitstream += BitArray(hex='0x%s' % self.nonce.encode('hex'))
+        bitstream += BitArray(hex=self.nonce.encode('hex'))
 
         # Add the source EID
         bitstream += get_bitstream_for_afi_address(self.source_eid)
@@ -276,8 +276,8 @@ class LISPMapRequestPacket(LISPControlPacket):
         # Add the EIDs
         for eid_prefix in self.eid_prefixes:
             # Add padding and prefix length
-            bitstream += BitArray(('uint:8=0, ' +
-                                   'uint:8=%d') % eid_prefix.prefixlen())
+            bitstream += BitArray('uint:8=0, '
+                                  'uint:8=%d' % eid_prefix.prefixlen())
 
             # Add the address
             bitstream += get_bitstream_for_afi_address(eid_prefix)
