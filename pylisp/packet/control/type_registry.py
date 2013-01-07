@@ -9,6 +9,9 @@ import numbers
 _type_classes = {}
 
 
+__all__ = ['register_type_class', 'get_type_class']
+
+
 def register_type_class(type_class):
     from base import LISPControlPacket
 
