@@ -12,3 +12,4 @@ from locator_record import LISPLocatorRecord
 from base import LISPControlPacket
 from map_request import LISPMapRequestPacket
 from map_reply import LISPMapReplyPacket
+from map_register import LISPMapRegisterPacket
