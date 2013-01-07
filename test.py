@@ -3,7 +3,7 @@ import unittest
 
 
 def load_tests(loader, tests, pattern):
-    new_tests = unittest.defaultTestLoader.discover('tests')
+    new_tests = unittest.defaultTestLoader.discover('unittests')
     tests.addTests(new_tests)
     return tests
 
