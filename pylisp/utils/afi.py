@@ -8,6 +8,28 @@ from bitstring import BitArray
 
 
 def read_afi_address_from_bitstream(bitstream, prefix_len=None):
+    '''
+    This function decodes an AFI address from a readable bitstream:
+    >>> from bitstring import ConstBitStream
+
+    This is an example of an IPv4 address:
+    >>> afi_address = '0001c00002ab'.decode('hex')
+    >>> bitstream = ConstBitStream(bytes=afi_address)
+    >>> read_afi_address_from_bitstream(bitstream)
+    IP('192.0.2.171')
+
+    If a prefix length is provided then a prefix is returned:
+    >>> afi_address = '0001c0000200'.decode('hex')
+    >>> bitstream = ConstBitStream(bytes=afi_address)
+    >>> read_afi_address_from_bitstream(bitstream, 24)
+    IP('192.0.2.0/24')
+
+    The function consumes the bits used by the AFI address from the
+    bitstream, but won't read beyond that point:
+    >>> bitstream.pos == bitstream.len
+    True
+    '''
+
     # Read the source EID
     afi = bitstream.read('uint:16')
     if afi == 0:
