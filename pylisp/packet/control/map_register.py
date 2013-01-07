@@ -7,7 +7,6 @@ from base import LISPControlPacket
 from bitstring import ConstBitStream, BitArray
 from pylisp.packet.control import type_registry
 from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
-from pylisp.utils.afi import get_bitstream_for_afi_address
 import hashlib
 import hmac
 
