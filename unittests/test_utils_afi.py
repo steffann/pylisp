@@ -191,7 +191,9 @@ class AfiTestCase(unittest.TestCase):
         with self.assertRaisesRegexp(ValueError, '[Uu]nsupported'):
             afi.get_bitstream_for_afi_address(address)
 
+
 suite = unittest.TestLoader().loadTestsFromTestCase(AfiTestCase)
+
 
 if __name__ == '__main__':
     unittest.main()

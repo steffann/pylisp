@@ -59,8 +59,23 @@ class LISPEncapsulatedControlMessagePacket(LISPControlPacket):
 
     @classmethod
     def from_bytes(cls, bitstream):
-        '''
+        r'''
         Parse the given packet and update properties accordingly
+
+        >>> data_hex = ('80000000'
+        ...             '6e000000004811402a0086400001ffff'
+        ...             '000000000000000a2a02000000000000'
+        ...             '0000000000000000'
+        ...             '10f610f600487396'
+        ...             '10000201ee924adef97a97d700000001'
+        ...             '57c3c44d00015f61535d0002200109e0'
+        ...             '85000b000000000000000001000f0002'
+        ...             '2a020000000000000000000000000000')
+        >>> data = data_hex.decode('hex')
+        >>> message = LISPEncapsulatedControlMessagePacket.from_bytes(data)
+        >>> print message
+        ... # doctest: +ELLIPSIS
+        {'security': False, 'payload': 'n\x00\x00\x00\x00H\x11...\x00\x00'}
         '''
         packet = cls()
 
@@ -97,8 +112,13 @@ class LISPEncapsulatedControlMessagePacket(LISPControlPacket):
         return packet
 
     def to_bytes(self):
-        '''
+        r'''
         Create bytes from properties
+
+        >>> message = LISPEncapsulatedControlMessagePacket()
+        >>> message.payload = 'DummyPayload'
+        >>> message.to_bytes()
+        '\x80\x00\x00\x00DummyPayload'
         '''
         # Verify that properties make sense
         self.sanitize()
