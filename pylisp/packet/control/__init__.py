@@ -20,3 +20,4 @@ from map_request import LISPMapRequestPacket
 from map_reply import LISPMapReplyPacket
 from map_register import LISPMapRegisterPacket
 from map_notify import LISPMapNotifyPacket
+from encapsulated_control_message import LISPEncapsulatedControlMessagePacket
