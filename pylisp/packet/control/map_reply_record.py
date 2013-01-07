@@ -3,35 +3,17 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
+from IPy import IP
 from bitstring import ConstBitStream, BitArray
+from pylisp.packet.control.constants import NMRA_NO_ACTION, \
+    NMRA_NATIVELY_FORWARD, NMRA_SEND_MAP_REQUEST, NMRA_DROP
+from pylisp.packet.control.locator_record import LISPLocatorRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
-from pylisp.packet.control.locator_record import LISPLocatorRecord
 import numbers
-from IPy import IP
 
 
-# The actions defined are used by an ITR or PITR when a
-# destination EID matches a negative mapping cache entry.
-# Unassigned values should cause a map-cache entry to be created
-# and, when packets match this negative cache entry, they will be
-# dropped.  The current assigned values are:
-#
-# (0) No-Action:  The map-cache is kept alive and no packet
-#    encapsulation occurs.
-#
-# (1) Natively-Forward:  The packet is not encapsulated or dropped
-#    but natively forwarded.
-#
-# (2) Send-Map-Request:  The packet invokes sending a Map-Request.
-#
-# (3) Drop:  A packet that matches this map-cache entry is dropped.
-#    An ICMP Unreachable message SHOULD be sent.
-
-NMRA_NO_ACTION = 0
-NMRA_NATIVELY_FORWARD = 1
-NMRA_SEND_MAP_REQUEST = 2
-NMRA_DROP = 3
+__all__ = ['LISPMapReplyRecord']
 
 
 class LISPMapReplyRecord(object):
