@@ -3,10 +3,13 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
-from base import LISPControlPacket
 from bitstring import ConstBitStream, BitArray
 from pylisp.packet.control import type_registry
+from pylisp.packet.control.base import LISPControlPacket
 from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
+
+
+__all__ = ['LISPMapReplyPacket']
 
 
 class LISPMapReplyPacket(LISPControlPacket):

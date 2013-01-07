@@ -4,12 +4,15 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from IPy import IP
-from base import LISPControlPacket
 from bitstring import ConstBitStream, BitArray
 from pylisp.packet.control import type_registry
+from pylisp.packet.control.base import LISPControlPacket
+from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
-from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
+
+
+__all__ = ['LISPMapRequestPacket']
 
 
 class LISPMapRequestPacket(LISPControlPacket):
