@@ -5,29 +5,30 @@ Created on 6 jan. 2013
 '''
 from bitstring import ConstBitStream, BitArray
 from pylisp.packet.control import type_registry
-from pylisp.packet.control.base import LISPControlPacket
+from pylisp.packet.control.base import LISPControlMessage
 from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
 
 
-__all__ = ['LISPMapReplyPacket']
+__all__ = ['LISPMapReplyMessage']
 
 
-class LISPMapReplyPacket(LISPControlPacket):
+class LISPMapReplyMessage(LISPControlMessage):
     # Class property: which message type do we represent?
     message_type = 2
 
-    def __init__(self):
+    def __init__(self, probe=False, enlra_enabled=False, security=False,
+                 nonce='\x00\x00\x00\x00\x00\x00\x00\x00', records=None):
         '''
         Constructor
         '''
-        super(LISPMapReplyPacket, self).__init__()
+        super(LISPMapReplyMessage, self).__init__()
 
         # Set defaults
-        self.probe = False
-        self.enlra_enabled = False
-        self.security = False
-        self.nonce = '\x00\x00\x00\x00\x00\x00\x00\x00'
-        self.records = []
+        self.probe = probe
+        self.enlra_enabled = enlra_enabled
+        self.security = security
+        self.nonce = nonce
+        self.records = records or []
 
     def __repr__(self):
         return str(self.__dict__)
@@ -37,7 +38,7 @@ class LISPMapReplyPacket(LISPControlPacket):
         Check if the current settings conform to the LISP specifications and
         fix them where possible.
         '''
-        super(LISPMapReplyPacket, self).sanitize()
+        super(LISPMapReplyMessage, self).sanitize()
 
         # P: This is the probe-bit which indicates that the Map-Reply is in
         # response to a locator reachability probe Map-Request.  The nonce
@@ -173,4 +174,4 @@ class LISPMapReplyPacket(LISPControlPacket):
 
 
 # Register this class in the registry
-type_registry.register_type_class(LISPMapReplyPacket)
+type_registry.register_type_class(LISPMapReplyMessage)

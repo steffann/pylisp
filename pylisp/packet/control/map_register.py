@@ -3,7 +3,7 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
-from base import LISPControlPacket
+from base import LISPControlMessage
 from bitstring import ConstBitStream, BitArray
 from pylisp.packet.control import type_registry
 from pylisp.packet.control.constants import KEY_ID_HMAC_SHA_1_96, \
@@ -13,26 +13,28 @@ import hashlib
 import hmac
 
 
-__all__ = ['LISPMapRegisterPacket']
+__all__ = ['LISPMapRegisterMessage']
 
 
-class LISPMapRegisterPacket(LISPControlPacket):
+class LISPMapRegisterMessage(LISPControlMessage):
     # Class property: which message type do we represent?
     message_type = 3
 
-    def __init__(self):
+    def __init__(self, proxy_map_reply=False, want_map_notify=False,
+                 nonce='\x00\x00\x00\x00\x00\x00\x00\x00', key_id=0,
+                 authentication_data='', records=None):
         '''
         Constructor
         '''
-        super(LISPMapRegisterPacket, self).__init__()
+        super(LISPMapRegisterMessage, self).__init__()
 
         # Set defaults
-        self.proxy_map_reply = False
-        self.want_map_notify = False
-        self.nonce = '\x00\x00\x00\x00\x00\x00\x00\x00'
-        self.key_id = 0
-        self.authentication_data = ''
-        self.records = []
+        self.proxy_map_reply = proxy_map_reply
+        self.want_map_notify = want_map_notify
+        self.nonce = nonce
+        self.key_id = key_id
+        self.authentication_data = authentication_data
+        self.records = records or []
 
     def __repr__(self):
         return str(self.__dict__)
@@ -42,7 +44,7 @@ class LISPMapRegisterPacket(LISPControlPacket):
         Check if the current settings conform to the LISP specifications and
         fix them where possible.
         '''
-        super(LISPMapRegisterPacket, self).sanitize()
+        super(LISPMapRegisterMessage, self).sanitize()
 
         # P: This is the proxy-map-reply bit, when set to 1 an ETR sends a Map-
         # Register message requesting for the Map-Server to proxy Map-Reply.
@@ -238,4 +240,4 @@ class LISPMapRegisterPacket(LISPControlPacket):
 
 
 # Register this class in the registry
-type_registry.register_type_class(LISPMapRegisterPacket)
+type_registry.register_type_class(LISPMapRegisterMessage)

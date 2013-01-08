@@ -17,17 +17,18 @@ __all__ = ['LISPMapReplyRecord']
 
 
 class LISPMapReplyRecord(object):
-    def __init__(self):
+    def __init__(self, ttl=0, nmr_action=NMRA_NO_ACTION, authoritative=False,
+                 map_version=0, eid_prefix=None, locator_records=None):
         '''
         Constructor
         '''
         # Set defaults
-        self.ttl = 0
-        self.nmr_action = NMRA_NO_ACTION
-        self.authoritative = False
-        self.map_version = 0
-        self.eid_prefix = None
-        self.locator_records = []
+        self.ttl = ttl
+        self.nmr_action = nmr_action
+        self.authoritative = authoritative
+        self.map_version = map_version
+        self.eid_prefix = eid_prefix
+        self.locator_records = locator_records or []
 
     def __repr__(self):
         return str(self.__dict__)

@@ -5,25 +5,25 @@ Created on 7 jan. 2013
 '''
 from bitstring import ConstBitStream, BitArray
 from pylisp.packet.control import type_registry
-from pylisp.packet.control.base import LISPControlPacket
+from pylisp.packet.control.base import LISPControlMessage
 
 
-__all__ = ['LISPEncapsulatedControlMessagePacket']
+__all__ = ['LISPEncapsulatedControlMessage']
 
 
-class LISPEncapsulatedControlMessagePacket(LISPControlPacket):
+class LISPEncapsulatedControlMessage(LISPControlMessage):
     # Class property: which message type do we represent?
     message_type = 8
 
-    def __init__(self):
+    def __init__(self, security=False, payload=''):
         '''
         Constructor
         '''
-        super(LISPEncapsulatedControlMessagePacket, self).__init__()
+        super(LISPEncapsulatedControlMessage, self).__init__()
 
         # Set defaults
-        self.security = False
-        self.payload = ''
+        self.security = security
+        self.payload = payload
 
         # TODO: actually en/decode the control message
         #       this needs an IPv4, IPv6 and UDP packet implementation
@@ -36,7 +36,7 @@ class LISPEncapsulatedControlMessagePacket(LISPControlPacket):
         Check if the current settings conform to the LISP specifications and
         fix them where possible.
         '''
-        super(LISPEncapsulatedControlMessagePacket, self).sanitize()
+        super(LISPEncapsulatedControlMessage, self).sanitize()
 
         # S: This is the Security bit.  When set to 1 the following
         # authentication information will be appended to the end of the Map-
@@ -72,7 +72,7 @@ class LISPEncapsulatedControlMessagePacket(LISPControlPacket):
         ...             '85000b000000000000000001000f0002'
         ...             '2a020000000000000000000000000000')
         >>> data = data_hex.decode('hex')
-        >>> message = LISPEncapsulatedControlMessagePacket.from_bytes(data)
+        >>> message = LISPEncapsulatedControlMessage.from_bytes(data)
         >>> print message
         ... # doctest: +ELLIPSIS
         {'security': False, 'payload': 'n\x00\x00\x00\x00H\x11...\x00\x00'}
@@ -115,10 +115,9 @@ class LISPEncapsulatedControlMessagePacket(LISPControlPacket):
         r'''
         Create bytes from properties
 
-        >>> message = LISPEncapsulatedControlMessagePacket()
-        >>> message.payload = 'DummyPayload'
+        >>> message = LISPEncapsulatedControlMessage(payload='Dummy')
         >>> message.to_bytes()
-        '\x80\x00\x00\x00DummyPayload'
+        '\x80\x00\x00\x00Dummy'
         '''
         # Verify that properties make sense
         self.sanitize()
@@ -136,4 +135,4 @@ class LISPEncapsulatedControlMessagePacket(LISPControlPacket):
 
 
 # Register this class in the registry
-type_registry.register_type_class(LISPEncapsulatedControlMessagePacket)
+type_registry.register_type_class(LISPEncapsulatedControlMessage)

@@ -13,12 +13,12 @@ __all__ = ['register_type_class', 'get_type_class']
 
 
 def register_type_class(type_class):
-    from base import LISPControlPacket
+    from base import LISPControlMessage
 
     # Check for valid class
-    if not issubclass(type_class, LISPControlPacket):
+    if not issubclass(type_class, LISPControlMessage):
         msg = 'Message type classes must be subclasses of {0}'
-        class_name = LISPControlPacket.__class__.__name__
+        class_name = LISPControlMessage.__class__.__name__
         raise ValueError(msg.format(class_name))
 
     # Check for valid type numbers
