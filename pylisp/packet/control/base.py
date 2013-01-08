@@ -5,7 +5,6 @@ Created on 6 jan. 2013
 '''
 from abc import ABCMeta, abstractmethod
 from bitstring import ConstBitStream
-import type_registry
 
 
 class LISPControlMessage(object):
@@ -38,6 +37,8 @@ class LISPControlMessage(object):
         Look at the type of the message, instantiate the correct class and
         let it parse the message.
         '''
+        import type_registry
+
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
             bitstream = ConstBitStream(bytes=bitstream)

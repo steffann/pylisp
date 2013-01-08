@@ -164,8 +164,34 @@ class LISPMapRequestMessage(LISPControlMessage):
 
     @classmethod
     def from_bytes(cls, bitstream):
-        '''
+        r'''
         Parse the given packet and update properties accordingly
+
+        >>> data_hex = ('13000001ae92b5574f849cd00001ac10'
+        ...             '1f0300015cfe1cbd00200001ac101f01')
+        >>> data = data_hex.decode('hex')
+        >>> message = LISPControlMessage.from_bytes(data)
+        >>> message.message_type
+        1
+        >>> message.authoritative
+        False
+        >>> message.probe
+        True
+        >>> message.smr
+        True
+        >>> message.pitr
+        False
+        >>> message.smr_invoked
+        False
+        >>> message.nonce
+        '\xae\x92\xb5WO\x84\x9c\xd0'
+        >>> message.source_eid
+        IP('172.16.31.3')
+        >>> message.itr_rlocs
+        [IP('92.254.28.189')]
+        >>> message.eid_prefixes
+        [IP('172.16.31.1')]
+        >>> message.map_reply
         '''
         packet = cls()
 
@@ -234,8 +260,16 @@ class LISPMapRequestMessage(LISPControlMessage):
         return packet
 
     def to_bytes(self):
-        '''
+        r'''
         Create bytes from properties
+
+        >>> message = LISPMapRequestMessage(itr_rlocs=[IP('192.0.2.1')],
+        ...                                 eid_prefixes=[IP('2001:db8::/32')])
+        >>> hex = message.to_bytes().encode('hex')
+        >>> hex[:40]
+        '10000001000000000000000000000001c0000201'
+        >>> hex[40:]
+        '0020000220010db8000000000000000000000000'
         '''
         # Verify that properties make sense
         self.sanitize()
