@@ -182,7 +182,7 @@ class LISPMapRequestMessage(LISPControlMessage):
 
         # Read the flags
         (packet.authoritative,
-         packet.map_reply is not None,
+         map_data_present,
          packet.probe,
          packet.smr,
          packet.pitr,
@@ -221,7 +221,7 @@ class LISPMapRequestMessage(LISPControlMessage):
             packet.eid_prefixes.append(eid_prefix)
 
         # Read the map-reply record if present
-        if packet.map_reply is not None:
+        if map_data_present:
             packet.map_reply = LISPMapReplyRecord.from_bytes(bitstream)
 
         # There should be no remaining bits
