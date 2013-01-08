@@ -69,7 +69,7 @@ class LISPMapReplyMessage(LISPControlMessage):
         # from the Map-Request is echoed in this Nonce field of the Map-
         # Reply.  When a 24-bit value is supplied, it resides in the low-
         # order 64 bits of the nonce field.
-        if not isinstance(self.nonce, bytes) or len(self.nonce) != 8:
+        if not isinstance(self.nonce, bytes) or len(self.nonce) not in (3, 8):
             raise ValueError('Invalid nonce')
 
         # Map-Reply Record:  When the M bit is set, this field is the size of a
@@ -158,6 +158,10 @@ class LISPMapReplyMessage(LISPControlMessage):
         bitstream += BitArray('uint:8=%d' % len(self.records))
 
         # Add the nonce
+        if len(self.nonce) < 8:
+            padding_len = 8 - len(self.nonce)
+            bitstream += BitArray(8 * padding_len)
+            
         bitstream += BitArray(hex=self.nonce.encode('hex'))
 
         # Add the map-reply records
