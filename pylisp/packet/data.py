@@ -44,18 +44,14 @@ class LISPDataPacket(object):
         # bits MUST NOT be set in the same packet.  If they are, a
         # decapsulating ETR MUST treat the "Nonce/Map-Version" field as
         # having a Nonce value present.
-        if self.nonce is not None and not isinstance(self.nonce, bytes):
-            raise ValueError('Nonce must be a None or a sequence of bytes')
+        if self.nonce is not None and (not isinstance(self.nonce, bytes) or
+                                       len(self.nonce) != 3):
+            raise ValueError('Nonce must be a None or a sequence of 3 bytes')
 
         if self.nonce is not None \
         and (self.source_map_version is not None or
              self.destination_map_version is not None):
             raise ValueError('Cannot have both a nonce and map versions')
-
-        if self.nonce is not None:
-            # Nonce must be a 24 bits (= 3 bytes) long bytestring
-            if not isinstance(self.nonce, bytes) or len(self.nonce) != 3:
-                raise ValueError('Invalid nonce')
 
         # The L bit is the Locator Status Bits field enabled bit.  When this
         # bit is set to 1, the Locator Status Bits in the second 32-bits of
