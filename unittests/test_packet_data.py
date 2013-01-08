@@ -20,7 +20,7 @@ def load_tests(loader, tests, ignore):
 
 
 class DataPacketTestCase(unittest.TestCase):
-    def test_generate_empty_packet(self):
+    def test_empty_packet(self):
         '''
         Generate a completely empty packet
         '''
@@ -116,6 +116,75 @@ class DataPacketTestCase(unittest.TestCase):
             message = data.LISPDataPacket(source_map_version=1234,
                                           destination_map_version=9999)
             message.sanitize()
+
+    def test_lsb(self):
+        '''
+        Generate a packet with alternating True/False LSBs
+        '''
+        lsb = [True, False] * 16
+        message = data.LISPDataPacket(lsb=lsb)
+        self.assertEqual('@\x00\x00\x00UUUU',
+                         message.to_bytes())
+
+    def test_bad_lsb_content(self):
+        '''
+        Generate a packet with invalid LSBs content
+        '''
+        lsb = [True, 'False'] * 16
+        with self.assertRaisesRegexp(ValueError, 'status.bits'):
+            message = data.LISPDataPacket(lsb=lsb)
+            message.sanitize()
+
+    def test_bad_lsb_length(self):
+        '''
+        Generate a packet with invalid LSBs length
+        '''
+        lsb = [True, False] * 8
+        with self.assertRaisesRegexp(ValueError, 'status.bits'):
+            message = data.LISPDataPacket(lsb=lsb)
+            message.sanitize()
+
+    def test_instance_id(self):
+        '''
+        Generate a packet with an instance-id
+        '''
+        message = data.LISPDataPacket(instance_id=11259375)
+        self.assertEqual('\x08\x00\x00\x00\xab\xcd\xef\x00',
+                         message.to_bytes())
+
+    def test_bad_instance_id(self):
+        '''
+        Generate a packet with an invalid instance-id
+        '''
+        with self.assertRaisesRegexp(ValueError, 'instance.id'):
+            message = data.LISPDataPacket(instance_id=112593750)
+            message.sanitize()
+
+    def test_lsb_and_instance_id(self):
+        '''
+        Generate a packet with lsb and an instance-id
+        '''
+        lsb = [True, False] * 4
+        message = data.LISPDataPacket(lsb=lsb, instance_id=11259375)
+        self.assertEqual('H\x00\x00\x00\xab\xcd\xefU',
+                         message.to_bytes())
+
+    def test_bad_lsb_and_instance_id(self):
+        '''
+        Generate a packet with invalid lsb length and an instance-id
+        '''
+        lsb = [True, False] * 16
+        with self.assertRaisesRegexp(ValueError, 'status.bits'):
+            message = data.LISPDataPacket(lsb=lsb, instance_id=11259375)
+            message.sanitize()
+
+    def test_payload(self):
+        '''
+        Generate a packet with payload
+        '''
+        message = data.LISPDataPacket(payload='SomeDummyPayload')
+        self.assertEqual('\x00\x00\x00\x00\x00\x00\x00\x00SomeDummyPayload',
+                         message.to_bytes())
 
 
 suite = unittest.TestLoader().loadTestsFromTestCase(DataPacketTestCase)
