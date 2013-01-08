@@ -6,37 +6,39 @@ Created on 6 jan. 2013
 from IPy import IP
 from bitstring import ConstBitStream, BitArray
 from pylisp.packet.control import type_registry
-from pylisp.packet.control.base import LISPControlPacket
+from pylisp.packet.control.base import LISPControlMessage
 from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 
 
-__all__ = ['LISPMapRequestPacket']
+__all__ = ['LISPMapRequestMessage']
 
 
-class LISPMapRequestPacket(LISPControlPacket):
+class LISPMapRequestMessage(LISPControlMessage):
     # Class property: which message type do we represent?
     message_type = 1
 
-    def __init__(self):
+    def __init__(self, authoritative=False, probe=False, smr=False, pitr=False,
+                 smr_invoked=False, nonce='\x00\x00\x00\x00\x00\x00\x00\x00',
+                 source_eid=None, itr_rlocs=None, eid_prefixes=None,
+                 map_reply=None):
         '''
         Constructor
         '''
-        super(LISPMapRequestPacket, self).__init__()
+        super(LISPMapRequestMessage, self).__init__()
 
         # Set defaults
-        self.authoritative = False
-        self.map_data_present = False
-        self.probe = False
-        self.smr = False
-        self.pitr = False
-        self.smr_invoked = False
-        self.nonce = '\x00\x00\x00\x00\x00\x00\x00\x00'
-        self.source_eid = None
-        self.itr_rlocs = []
-        self.eid_prefixes = []
-        self.map_reply = None
+        self.authoritative = authoritative
+        self.probe = probe
+        self.smr = smr
+        self.pitr = pitr
+        self.smr_invoked = smr_invoked
+        self.nonce = nonce
+        self.source_eid = source_eid
+        self.itr_rlocs = itr_rlocs or []
+        self.eid_prefixes = eid_prefixes or []
+        self.map_reply = map_reply
 
     def __repr__(self):
         return str(self.__dict__)
@@ -46,7 +48,7 @@ class LISPMapRequestPacket(LISPControlPacket):
         Check if the current settings conform to the LISP specifications and
         fix them where possible.
         '''
-        super(LISPMapRequestPacket, self).sanitize()
+        super(LISPMapRequestMessage, self).sanitize()
 
         # A: This is an authoritative bit, which is set to 0 for UDP-based Map-
         # Requests sent by an ITR.  Set to 1 when an ITR wants the
@@ -57,14 +59,7 @@ class LISPMapRequestPacket(LISPControlPacket):
 
         # M: This is the map-data-present bit, when set, it indicates a Map-
         # Reply Record segment is included in the Map-Request.
-        if not isinstance(self.map_data_present, bool):
-            raise ValueError('Map-Data-Present flag must be a boolean')
-
-        if self.map_data_present:
-            if not self.map_reply:
-                raise ValueError('Map reply is missing')
-        else:
-            self.map_reply = None
+        # Checked below
 
         # P: This is the probe-bit which indicates that a Map-Request SHOULD be
         # treated as a locator reachability probe.  The receiver SHOULD
@@ -161,7 +156,7 @@ class LISPMapRequestPacket(LISPControlPacket):
         # contains the EID-to-RLOC mapping entry associated with the Source
         # EID.  This allows the ETR which will receive this Map-Request to
         # cache the data if it chooses to do so.
-        if self.map_reply:
+        if self.map_reply is not None:
             if not isinstance(self.map_reply, LISPMapReplyRecord):
                 raise ValueError('Invalid Map-Reply')
 
@@ -187,7 +182,7 @@ class LISPMapRequestPacket(LISPControlPacket):
 
         # Read the flags
         (packet.authoritative,
-         packet.map_data_present,
+         packet.map_reply is not None,
          packet.probe,
          packet.smr,
          packet.pitr,
@@ -226,7 +221,7 @@ class LISPMapRequestPacket(LISPControlPacket):
             packet.eid_prefixes.append(eid_prefix)
 
         # Read the map-reply record if present
-        if packet.map_data_present:
+        if packet.map_reply is not None:
             packet.map_reply = LISPMapReplyRecord.from_bytes(bitstream)
 
         # There should be no remaining bits
@@ -251,7 +246,7 @@ class LISPMapRequestPacket(LISPControlPacket):
         # Add the flags
         bitstream += BitArray('bool=%d, bool=%d, bool=%d, bool=%d, '
                               'bool=%d, bool=%d' % (self.authoritative,
-                                                    self.map_data_present,
+                                                    self.map_reply is not None,
                                                     self.probe,
                                                     self.smr,
                                                     self.pitr,
@@ -286,11 +281,11 @@ class LISPMapRequestPacket(LISPControlPacket):
             bitstream += get_bitstream_for_afi_address(eid_prefix)
 
         # Add the map-reply record if present
-        if self.map_data_present:
+        if self.map_reply is not None:
             bitstream += self.map_reply.to_bitstream()
 
         return bitstream.bytes
 
 
 # Register this class in the registry
-type_registry.register_type_class(LISPMapRequestPacket)
+type_registry.register_type_class(LISPMapRequestMessage)

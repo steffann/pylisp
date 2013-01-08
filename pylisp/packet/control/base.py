@@ -8,7 +8,7 @@ from bitstring import ConstBitStream
 import type_registry
 
 
-class LISPControlPacket(object):
+class LISPControlMessage(object):
     '''
     This is the abstract base class for all LISP control packets
     '''

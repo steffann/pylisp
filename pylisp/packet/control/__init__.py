@@ -15,9 +15,9 @@ from locator_record import LISPLocatorRecord
 
 # Packets
 # =======
-from base import LISPControlPacket
-from map_request import LISPMapRequestPacket
-from map_reply import LISPMapReplyPacket
-from map_register import LISPMapRegisterPacket
-from map_notify import LISPMapNotifyPacket
-from encapsulated_control_message import LISPEncapsulatedControlMessagePacket
+from base import LISPControlMessage
+from map_request import LISPMapRequestMessage
+from map_reply import LISPMapReplyMessage
+from map_register import LISPMapRegisterMessage
+from map_notify import LISPMapNotifyMessage
+from encapsulated_control_message import LISPEncapsulatedControlMessage

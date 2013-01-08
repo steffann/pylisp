@@ -14,19 +14,21 @@ __all__ = ['LISPLocatorRecord']
 
 
 class LISPLocatorRecord(object):
-    def __init__(self):
+    def __init__(self, priority=255, weight=0, m_priority=255, m_weight=0,
+                 local=False, probed_locator=False, reachable=False,
+                 locator=None):
         '''
         Constructor
         '''
         # Set defaults
-        self.priority = 255
-        self.weight = 0
-        self.m_priority = 255
-        self.m_weight = 0
-        self.local = False
-        self.probed_locator = False
-        self.reachable = False
-        self.locator = None
+        self.priority = priority
+        self.weight = weight
+        self.m_priority = m_priority
+        self.m_weight = m_weight
+        self.local = local
+        self.probed_locator = probed_locator
+        self.reachable = reachable
+        self.locator = locator
 
     def __repr__(self):
         return str(self.__dict__)
