@@ -3,6 +3,7 @@
 # Add the parent directory to the start of the path
 if __name__ == '__main__':
     import sys
+    sys.path.insert(0, '.')
     sys.path.insert(0, '..')
 
 from IPy import IP
