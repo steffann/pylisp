@@ -161,8 +161,8 @@ class LISPMapReplyMessage(LISPControlMessage):
         if len(self.nonce) < 8:
             padding_len = 8 - len(self.nonce)
             bitstream += BitArray(8 * padding_len)
-            
-        bitstream += BitArray(hex=self.nonce.encode('hex'))
+
+        bitstream += BitArray(bytes=self.nonce)
 
         # Add the map-reply records
         for record in self.records:

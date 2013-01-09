@@ -296,7 +296,7 @@ class LISPMapRequestMessage(LISPControlMessage):
         bitstream += BitArray('uint:8=%d' % len(self.eid_prefixes))
 
         # Add the nonce
-        bitstream += BitArray(hex=self.nonce.encode('hex'))
+        bitstream += BitArray(bytes=self.nonce)
 
         # Add the source EID
         bitstream += get_bitstream_for_afi_address(self.source_eid)
