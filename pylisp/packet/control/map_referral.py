@@ -26,9 +26,6 @@ class LISPMapReferralMessage(LISPControlMessage):
         self.nonce = nonce
         self.records = records or []
 
-    def __repr__(self):
-        return str(self.__dict__)
-
     def sanitize(self):
         '''
         Check if the current settings conform to the LISP specifications and
@@ -125,7 +122,12 @@ class LISPMapReferralMessage(LISPControlMessage):
         for record in self.records:
             bitstream += record.to_bytes()
 
-        return bitstream.bytes + self.payload
+        # Determine payload
+        payload = self.payload
+        if hasattr(payload, 'to_bytes'):
+            payload = payload.to_bytes()
+
+        return bitstream.bytes + payload
 
 
 # Register this class in the registry

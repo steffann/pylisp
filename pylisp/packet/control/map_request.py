@@ -40,9 +40,6 @@ class LISPMapRequestMessage(LISPControlMessage):
         self.eid_prefixes = eid_prefixes or []
         self.map_reply = map_reply
 
-    def __repr__(self):
-        return str(self.__dict__)
-
     def sanitize(self):
         '''
         Check if the current settings conform to the LISP specifications and

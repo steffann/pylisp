@@ -23,6 +23,13 @@ class LISPControlMessage(object):
         Constructor
         '''
 
+    def __repr__(self):
+        # This works as long as we accept all properties as paramters in the
+        # constructor
+        params = ['%s=%r' % (k, v) for k, v in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__,
+                           ', '.join(params))
+
     @abstractmethod
     def sanitize(self):
         '''
@@ -37,7 +44,7 @@ class LISPControlMessage(object):
         Look at the type of the message, instantiate the correct class and
         let it parse the message.
         '''
-        import type_registry
+        from pylisp.packet.control import type_registry
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
