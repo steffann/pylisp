@@ -225,7 +225,7 @@ class LISPDataPacket(object):
         # Add the 24 bit nonce or the map-versions if present
         if self.nonce is not None:
             # Nonce
-            bitstream += BitArray(hex=self.nonce.encode('hex'))
+            bitstream += BitArray(bytes=self.nonce)
         elif self.source_map_version is not None \
         or self.destination_map_version is not None:
             # Map versions

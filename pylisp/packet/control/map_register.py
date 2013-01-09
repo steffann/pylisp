@@ -224,7 +224,7 @@ class LISPMapRegisterMessage(LISPControlMessage):
         bitstream += BitArray('uint:8=%d' % len(self.records))
 
         # Add the nonce
-        bitstream += BitArray(hex=self.nonce.encode('hex'))
+        bitstream += BitArray(bytes=self.nonce)
 
         # Add the key-id and authentication data
         bitstream += BitArray('uint:16=%d, uint:16=%d, hex=%s'
