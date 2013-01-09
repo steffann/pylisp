@@ -5,8 +5,6 @@ Created on 6 jan. 2013
 '''
 from IPy import IP
 from bitstring import ConstBitStream, BitArray
-from pylisp.packet.control.constants import NMRA_NO_ACTION, \
-    NMRA_NATIVELY_FORWARD, NMRA_SEND_MAP_REQUEST, NMRA_DROP
 from pylisp.packet.control.locator_record import LISPLocatorRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
@@ -17,14 +15,35 @@ __all__ = ['LISPMapReplyRecord']
 
 
 class LISPMapReplyRecord(object):
-    def __init__(self, ttl=0, nmr_action=NMRA_NO_ACTION, authoritative=False,
+    # The actions defined are used by an ITR or PITR when a
+    # destination EID matches a negative mapping cache entry.
+    # Unassigned values should cause a map-cache entry to be created
+    # and, when packets match this negative cache entry, they will be
+    # dropped.  The current assigned values are:
+    #
+    # (0) No-Action:  The map-cache is kept alive and no packet
+    #    encapsulation occurs.
+    #
+    # (1) Natively-Forward:  The packet is not encapsulated or dropped
+    #    but natively forwarded.
+    #
+    # (2) Send-Map-Request:  The packet invokes sending a Map-Request.
+    #
+    # (3) Drop:  A packet that matches this map-cache entry is dropped.
+    #    An ICMP Unreachable message SHOULD be sent.
+    ACT_NO_ACTION = 0
+    ACT_NATIVELY_FORWARD = 1
+    ACT_SEND_MAP_REQUEST = 2
+    ACT_DROP = 3
+
+    def __init__(self, ttl=0, action=ACT_NO_ACTION, authoritative=False,
                  map_version=0, eid_prefix=None, locator_records=None):
         '''
         Constructor
         '''
         # Set defaults
         self.ttl = ttl
-        self.nmr_action = nmr_action
+        self.action = action
         self.authoritative = authoritative
         self.map_version = map_version
         self.eid_prefix = eid_prefix
@@ -67,10 +86,12 @@ class LISPMapReplyRecord(object):
         #  (3) Drop:  A packet that matches this map-cache entry is dropped.
         #     An ICMP Unreachable message SHOULD be sent.
         if self.locator_records:
-            self.nmr_action = NMRA_NO_ACTION
+            self.action = self.ACT_NO_ACTION
 
-        if self.nmr_action not in (NMRA_NO_ACTION, NMRA_NATIVELY_FORWARD,
-                                   NMRA_SEND_MAP_REQUEST, NMRA_DROP):
+        if self.action not in (self.ACT_NO_ACTION,
+                               self.ACT_NATIVELY_FORWARD,
+                               self.ACT_SEND_MAP_REQUEST,
+                               self.ACT_DROP):
             raise ValueError('Invalid Negative Map-Reply action')
 
         # A: The Authoritative bit, when sent is always set to 1 by an ETR.
@@ -128,7 +149,7 @@ class LISPMapReplyRecord(object):
         eid_prefix_len = bitstream.read('uint:8')
 
         # Read the Negative Map_Reply action
-        record.nmr_action = bitstream.read('uint:3')
+        record.action = bitstream.read('uint:3')
 
         # Read the flag
         record.authoritative = bitstream.read('bool')
@@ -176,7 +197,7 @@ class LISPMapReplyRecord(object):
         bitstream += BitArray('uint:8=%d' % self.eid_prefix.prefixlen())
 
         # Add the NMR action
-        bitstream += BitArray('uint:3=%d' % self.nmr_action)
+        bitstream += BitArray('uint:3=%d' % self.action)
 
         # Add the authoritative flag
         bitstream += BitArray('bool=%d' % self.authoritative)
