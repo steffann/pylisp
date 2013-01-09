@@ -15,7 +15,7 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
     # Class property: which message type do we represent?
     message_type = 8
 
-    def __init__(self, security=False, payload=''):
+    def __init__(self, security=False, ddt_originated=False, payload=''):
         '''
         Constructor
         '''
@@ -23,6 +23,7 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
 
         # Set defaults
         self.security = security
+        self.ddt_originated = ddt_originated
         self.payload = payload
 
         # TODO: actually en/decode the control message
@@ -49,6 +50,12 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
             raise NotImplementedError('Handling security data is not ' +
                                       'implemented yet')
 
+        # "D" is the "DDT-originated" flag and is set by a DDT client to
+        # indicate that the receiver can and should return Map-Referral
+        # messages as appropriate.
+        if not isinstance(self.ddt_originated, bool):
+            raise ValueError('DDT originated flag must be a boolean')
+
         # LCM:   The format is one of the control message formats described in
         # this section.  At this time, only Map-Request messages are allowed
         # to be encapsulated.  And in the future, PIM Join-Prune messages
@@ -73,9 +80,13 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         ...             '2a020000000000000000000000000000')
         >>> data = data_hex.decode('hex')
         >>> message = LISPEncapsulatedControlMessage.from_bytes(data)
-        >>> print message
+        >>> message.security
+        False
+        >>> message.ddt_originated
+        False
+        >>> message.payload
         ... # doctest: +ELLIPSIS
-        {'security': False, 'payload': 'n\x00\x00\x00\x00H\x11...\x00\x00'}
+        'n\x00\x00\x00\x00H\x11...\x00\x00'
         '''
         packet = cls()
 
@@ -91,10 +102,11 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
             raise ValueError(msg.format(class_name))
 
         # Read the flags
-        packet.security = bitstream.read('bool')
+        (packet.security,
+         packet.ddt_originated) = bitstream.readlist('2*bool')
 
         # Skip reserved bits
-        bitstream.read(27)
+        bitstream.read(26)
 
         # If the security flag is set then there should be security data here
         # TODO: deal with it
@@ -126,10 +138,11 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         bitstream = BitArray('uint:4=%d' % self.message_type)
 
         # Add the flags
-        bitstream += BitArray('bool=%d' % self.security)
+        bitstream += BitArray('bool=%d, bool=%d' % (self.security,
+                                                    self.ddt_originated))
 
         # Add padding
-        bitstream += BitArray(27)
+        bitstream += BitArray(26)
 
         return bitstream.bytes + self.payload
 
