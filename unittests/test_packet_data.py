@@ -191,13 +191,6 @@ class DataPacketTestCase(unittest.TestCase):
 
              ]
 
-    def test_repr(self):
-        '''
-        The representation is str(__dict__)
-        '''
-        message = data.LISPDataPacket()
-        self.assertEqual(repr(message), str(message.__dict__))
-
 
 suite = unittest.TestLoader().loadTestsFromTestCase(DataPacketTestCase)
 
