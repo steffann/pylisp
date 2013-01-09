@@ -122,12 +122,7 @@ class LISPMapReferralMessage(LISPControlMessage):
         for record in self.records:
             bitstream += record.to_bytes()
 
-        # Determine payload
-        payload = self.payload
-        if hasattr(payload, 'to_bytes'):
-            payload = payload.to_bytes()
-
-        return bitstream.bytes + payload
+        return bitstream.bytes
 
 
 # Register this class in the registry
