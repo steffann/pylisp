@@ -30,9 +30,6 @@ class LISPMapReplyMessage(LISPControlMessage):
         self.nonce = nonce
         self.records = records or []
 
-    def __repr__(self):
-        return str(self.__dict__)
-
     def sanitize(self):
         '''
         Check if the current settings conform to the LISP specifications and

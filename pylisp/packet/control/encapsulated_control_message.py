@@ -29,9 +29,6 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         # TODO: actually en/decode the control message
         #       this needs an IPv4, IPv6 and UDP packet implementation
 
-    def __repr__(self):
-        return str(self.__dict__)
-
     def sanitize(self):
         '''
         Check if the current settings conform to the LISP specifications and
@@ -144,7 +141,12 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         # Add padding
         bitstream += BitArray(26)
 
-        return bitstream.bytes + self.payload
+        # Determine payload
+        payload = self.payload
+        if hasattr(payload, 'to_bytes'):
+            payload = payload.to_bytes()
+
+        return bitstream.bytes + payload
 
 
 # Register this class in the registry

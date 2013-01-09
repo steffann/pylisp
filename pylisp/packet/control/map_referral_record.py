@@ -70,7 +70,11 @@ class LISPMapReferralRecord(object):
         self.signatures = signatures or []
 
     def __repr__(self):
-        return str(self.__dict__)
+        # This works as long as we accept all properties as paramters in the
+        # constructor
+        params = ['%s=%r' % (k, v) for k, v in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__,
+                           ', '.join(params))
 
     def sanitize(self):
         '''

@@ -31,7 +31,11 @@ class LISPDataPacket(object):
         self.payload = payload
 
     def __repr__(self):
-        return str(self.__dict__)
+        # This works as long as we accept all properties as paramters in the
+        # constructor
+        params = ['%s=%r' % (k, v) for k, v in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__,
+                           ', '.join(params))
 
     def sanitize(self):
         '''
@@ -251,4 +255,9 @@ class LISPDataPacket(object):
         else:
             bitstream += BitArray(lsb_bits)
 
-        return bitstream.bytes + self.payload
+        # Determine payload
+        payload = self.payload
+        if hasattr(payload, 'to_bytes'):
+            payload = payload.to_bytes()
+
+        return bitstream.bytes + payload
