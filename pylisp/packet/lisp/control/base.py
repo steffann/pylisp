@@ -44,7 +44,7 @@ class LISPControlMessage(object):
         Look at the type of the message, instantiate the correct class and
         let it parse the message.
         '''
-        from pylisp.packet.control import type_registry
+        from pylisp.packet.lisp.control import type_registry
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):

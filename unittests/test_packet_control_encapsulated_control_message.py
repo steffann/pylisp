@@ -6,7 +6,7 @@ if __name__ == '__main__':
     sys.path.insert(0, '.')
     sys.path.insert(0, '..')
 
-from pylisp.packet.control import encapsulated_control_message
+from pylisp.packet.lisp.control import encapsulated_control_message
 import doctest
 import unittest
 

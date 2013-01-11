@@ -4,10 +4,14 @@ Created on 9 jan. 2013
 @author: sander
 '''
 from bitstring import BitStream, ConstBitStream
+from pylisp.packet.ip.protocol import Protocol
 from pylisp.utils import checksum
+from pylisp.packet.ip import protocol_registry
 
 
-class UDPMessage(object):
+class UDPMessage(Protocol):
+    header_type = 17
+
     def __init__(self, source_port=0, destination_port=0, checksum=0,
                  payload=''):
         self.source_port = source_port
@@ -30,7 +34,7 @@ class UDPMessage(object):
 
     def generate_pseudo_header(self, source, destination):
         # Calculate the length of the UDP layer
-        udp_length = 8 + len(self.payload)
+        udp_length = 8 + len(bytes(self.payload))
 
         if source.version() == 4 and destination.version() == 4:
             # Generate an IPv4 pseudo-header
@@ -97,6 +101,16 @@ class UDPMessage(object):
         payload_bytes = length - 8
         packet.payload = bitstream.read('bytes:%d' % payload_bytes)
 
+        # LISP-specific handling
+        if packet.source_port == 4341 or packet.destination_port == 4341:
+            # Payload is a LISP data packet
+            from pylisp.packet.lisp.data import LISPDataPacket
+            packet.payload = LISPDataPacket.from_bytes(packet.payload)
+        elif packet.source_port == 4342 or packet.destination_port == 4342:
+            # Payload is a LISP control message
+            from pylisp.packet.lisp.control.base import LISPControlMessage
+            packet.payload = LISPControlMessage.from_bytes(packet.payload)
+
         # There should be no remaining bits
         if bitstream.pos != bitstream.len:
             raise ValueError('Bits remaining after processing packet')
@@ -119,15 +133,14 @@ class UDPMessage(object):
                                               self.destination_port))
 
         # Write the length
-        length = len(self.payload) + 8
+        payload_bytes = bytes(self.payload)
+        length = len(payload_bytes) + 8
         bitstream += BitStream('uint:16=%d' % length)
 
         # Write the checksum
         bitstream += BitStream('uint:16=%d' % self.checksum)
 
-        # Determine payload
-        payload = self.payload
-        if hasattr(payload, 'to_bytes'):
-            payload = payload.to_bytes()
+        return bitstream.bytes + payload_bytes
 
-        return bitstream.bytes + payload
+# Register this header type
+protocol_registry.register_type_class(UDPMessage)

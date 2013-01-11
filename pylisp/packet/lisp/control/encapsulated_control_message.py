@@ -4,8 +4,7 @@ Created on 7 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray
-from pylisp.packet.control import type_registry
-from pylisp.packet.control.base import LISPControlMessage
+from pylisp.packet.lisp.control import type_registry, LISPControlMessage
 
 
 __all__ = ['LISPEncapsulatedControlMessage']
