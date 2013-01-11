@@ -243,9 +243,10 @@ class LISPMapReferralRecord(object):
 
         # EID-prefix:  4 octets if an IPv4 address-family, 16 octets if an IPv6
         # address-family.
-        if not isinstance(self.eid_prefix, IP) \
-        or self.eid_prefix.version() not in (4, 6):
-            raise ValueError('EID prefix must be IPv4 or IPv6')
+# Disable until we have proper LCAF support
+#        if not isinstance(self.eid_prefix, IP) \
+#        or self.eid_prefix.version() not in (4, 6):
+#            raise ValueError('EID prefix must be IPv4 or IPv6')
 
         # Check locator records
         # The local and probed_locator bits aren't used in this context
