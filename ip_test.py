@@ -70,3 +70,12 @@ udp_msg_bytes = udp_message.to_bytes()
 udp_msg_bytes_hex = udp_msg_bytes.encode('hex')
 
 print packet.payload == udp_msg_bytes
+
+from pylisp.packet.ip.ipv6 import IPv6HopByHopOptionsHeader
+
+hdrbytes_hex = ('00010000000000000000000000000000')
+hdrbytes = hdrbytes_hex.decode('hex')
+hdr = IPv6HopByHopOptionsHeader.from_bytes(hdrbytes)
+print hdr
+print hdrbytes_hex
+print hdr.to_bytes().encode('hex')
