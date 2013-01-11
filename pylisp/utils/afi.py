@@ -3,7 +3,7 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
-from IPy import IP
+from IPy import IP, _checkNetaddrWorksWithPrefixlen
 from bitstring import BitArray
 
 
@@ -60,9 +60,9 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
         # WARNING: Huge Ugly Hack
         address._prefixlen = prefix_len
 
-        if not address._checkNetaddrWorksWithPrefixlen(address.ip,
-                                                       address._prefixlen,
-                                                       address._ipversion):
+        if not _checkNetaddrWorksWithPrefixlen(address.ip,
+                                               address._prefixlen,
+                                               address._ipversion):
             raise ValueError("%s has invalid prefix length (%s)"
                              % (repr(address), address._prefixlen))
 
