@@ -5,6 +5,7 @@ Created on 6 jan. 2013
 '''
 from IPy import IP
 from bitstring import BitArray
+from pylisp.utils.lcaf import read_lcaf_address_from_bitstream
 
 
 def read_afi_address_from_bitstream(bitstream, prefix_len=None):
@@ -50,7 +51,7 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
         address = IP(address_int, ipversion=6)
 
     elif afi == 16387:
-        raise ValueError('Unable to handle LCAF addresses')
+        address = read_lcaf_address_from_bitstream(bitstream)
 
     else:
         raise ValueError('Unable to handle AFI {0}'.format(afi))
