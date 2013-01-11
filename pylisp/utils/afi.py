@@ -57,16 +57,16 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
         raise ValueError('Unable to handle AFI {0}'.format(afi))
 
     if isinstance(address, IP) and prefix_len is not None:
-        # Make a prefix out of it
-        prefix = address.make_net(prefix_len)
+        # WARNING: Huge Ugly Hack
+        address._prefixlen = prefix_len
 
-        # Check that we didn't blank out any bits
-        if address.ip != prefix.ip:
-            raise ValueError('AFI address contains bits masked by prefix')
+        if not address._checkNetaddrWorksWithPrefixlen(address.ip,
+                                                       address._prefixlen,
+                                                       address._ipversion):
+            raise ValueError("%s has invalid prefix length (%s)"
+                             % (repr(address), address._prefixlen))
 
-        return prefix
-    else:
-        return address
+    return address
 
 
 def get_bitstream_for_afi_address(address):
