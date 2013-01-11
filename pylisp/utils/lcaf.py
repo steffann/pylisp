@@ -4,9 +4,22 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from pylisp.utils.afi import read_afi_address_from_bitstream
+from IPy import IP
 
 
 # TODO: This should really be put into a class structure
+
+
+class LCAFInstanceIP(IP):
+    def __init__(self, data, ipversion=0, make_net=0, instance_id=0):
+        IP.__init__(self, data, ipversion=ipversion, make_net=make_net)
+        self.instance_id = instance_id
+
+
+class LCAFAutonomousSystemIP(IP):
+    def __init__(self, data, ipversion=0, make_net=0, asn=0):
+        IP.__init__(self, data, ipversion=ipversion, make_net=make_net)
+        self.asn = asn
 
 
 def read_lcaf_address_from_bitstream(bitstream, prefix_len=None):
@@ -44,13 +57,11 @@ def read_lcaf_address_from_bitstream(bitstream, prefix_len=None):
     elif lcaf_type == 2:
         instance_id = data.read('uint:32')
         address = read_afi_address_from_bitstream(data)
-        return {'instance_id': instance_id,
-                'address': address}
+        return LCAFInstanceIP(address, instance_id=instance_id)
     elif lcaf_type == 3:
         asn = data.read('uint:32')
         address = read_afi_address_from_bitstream(data)
-        return {'asn': asn,
-                'address': address}
+        return LCAFAutonomousSystemIP(address, asn=asn)
     elif lcaf_type == 4:
         tos_tc_flowlabel = data.read('uint:24')
         protocol = data.read('uint:8')
