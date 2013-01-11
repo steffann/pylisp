@@ -33,13 +33,6 @@ class IPv6Packet(Protocol):
         self.destination = destination
         self.payload = payload
 
-    def __repr__(self):
-        # This works as long as we accept all properties as paramters in the
-        # constructor
-        params = ['%s=%r' % (k, v) for k, v in self.__dict__.iteritems()]
-        return '%s(%s)' % (self.__class__.__name__,
-                           ', '.join(params))
-
     def get_final_payload(self):
         next_header = self.next_header
         payload = self.payload

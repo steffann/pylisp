@@ -4,15 +4,16 @@ Created on 5 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray
-import collections
-import numbers
 from pylisp.packet.ip.ipv4 import IPv4Packet
 from pylisp.packet.ip.ipv6.base import IPv6Packet
+from pylisp.packet.ip.protocol import Protocol
+import collections
+import numbers
 
 __all__ = ['LISPDataPacket']
 
 
-class LISPDataPacket(object):
+class LISPDataPacket(Protocol):
     '''
     classdocs
     '''
@@ -31,13 +32,6 @@ class LISPDataPacket(object):
         self.lsb = lsb
         self.instance_id = instance_id
         self.payload = payload
-
-    def __repr__(self):
-        # This works as long as we accept all properties as paramters in the
-        # constructor
-        params = ['%s=%r' % (k, v) for k, v in self.__dict__.iteritems()]
-        return '%s(%s)' % (self.__class__.__name__,
-                           ', '.join(params))
 
     def sanitize(self):
         '''

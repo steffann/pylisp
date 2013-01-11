@@ -5,9 +5,10 @@ Created on 6 jan. 2013
 '''
 from abc import ABCMeta, abstractmethod
 from bitstring import ConstBitStream
+from pylisp.packet.ip.protocol import Protocol
 
 
-class LISPControlMessage(object):
+class LISPControlMessage(Protocol):
     '''
     This is the abstract base class for all LISP control packets
     '''
@@ -22,13 +23,6 @@ class LISPControlMessage(object):
         '''
         Constructor
         '''
-
-    def __repr__(self):
-        # This works as long as we accept all properties as paramters in the
-        # constructor
-        params = ['%s=%r' % (k, v) for k, v in self.__dict__.iteritems()]
-        return '%s(%s)' % (self.__class__.__name__,
-                           ', '.join(params))
 
     @abstractmethod
     def sanitize(self):
