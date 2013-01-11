@@ -7,8 +7,7 @@ if __name__ == '__main__':
     sys.path.insert(0, '..')
 
 from copy import copy
-from pylisp.packet.control import type_registry
-from pylisp.packet.control.base import LISPControlMessage
+from pylisp.packet.lisp.control import type_registry, LISPControlMessage
 import doctest
 import unittest
 

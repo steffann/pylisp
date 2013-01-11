@@ -3,8 +3,7 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
-from pylisp.packet.control import type_registry
-from pylisp.packet.control.map_register import LISPMapRegisterMessage
+from pylisp.packet.lisp.control import type_registry, LISPMapRegisterMessage
 
 
 __all__ = ['LISPMapNotify']

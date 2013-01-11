@@ -3,18 +3,21 @@ Created on 9 jan. 2013
 
 @author: sander
 '''
-from bitstring import ConstBitStream, BitStream
 from IPy import IP
+from bitstring import ConstBitStream, BitStream
+from pylisp.packet.ip import protocol_registry
 from pylisp.utils import checksum
 import math
+from pylisp.packet.ip.protocol import Protocol
 
 
-class IPv4Packet(object):
+class IPv4Packet(Protocol):
     '''
     Minimal IPv4 implementation to use in LISP Encapsulated Control Messages.
     Options are not interpreted.
     '''
 
+    header_type = 4
     version = 4
 
     def __init__(self, tos=0, identification=0, dont_fragment=False,
@@ -126,6 +129,10 @@ class IPv4Packet(object):
         payload_bytes = (total_length) - (ihl * 4)
         packet.payload = bitstream.read('bytes:%d' % payload_bytes)
 
+        payload_class = protocol_registry.get_type_class(packet.protocol)
+        if payload_class:
+            packet.payload = payload_class.from_bytes(packet.payload)
+
         # There should be no remaining bits
         if bitstream.pos != bitstream.len:
             raise ValueError('Bits remaining after processing packet')
@@ -153,7 +160,8 @@ class IPv4Packet(object):
         bitstream += BitStream('uint:8=%d' % self.tos)
 
         # Write the total length
-        total_length = 20 + len(self.payload)
+        payload_bytes = bytes(self.payload)
+        total_length = 20 + len(payload_bytes)
         bitstream += BitStream('uint:16=%d' % total_length)
 
         # Write the identification
@@ -190,9 +198,8 @@ class IPv4Packet(object):
         my_checksum = checksum.ones_complement(bitstream.bytes)
         bitstream[80:96] = BitStream('uint:16=%d' % my_checksum)
 
-        # Determine payload
-        payload = self.payload
-        if hasattr(payload, 'to_bytes'):
-            payload = payload.to_bytes()
+        return bitstream.bytes + payload_bytes
 
-        return bitstream.bytes + payload
+
+# Register this header type
+protocol_registry.register_type_class(IPv4Packet)

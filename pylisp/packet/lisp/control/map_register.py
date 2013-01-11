@@ -5,10 +5,8 @@ Created on 6 jan. 2013
 '''
 from base import LISPControlMessage
 from bitstring import ConstBitStream, BitArray
-from pylisp.packet.control import type_registry
-from pylisp.packet.control.constants import KEY_ID_HMAC_SHA_1_96, \
-    KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE
-from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
+from pylisp.packet.lisp.control import type_registry, KEY_ID_HMAC_SHA_1_96, \
+    KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE, LISPMapReplyRecord
 import hashlib
 import hmac
 
@@ -62,7 +60,7 @@ class LISPMapRegisterMessage(LISPControlMessage):
         # messages.  Since the Map-Register message is authenticated, the
         # nonce field is not currently used for any security function but
         # may be in the future as part of an anti-replay solution.
-        if not isinstance(self.nonce, bytes) or len(self.nonce) != 8:
+        if len(bytes(self.nonce)) != 8:
             raise ValueError('Invalid nonce')
 
         # Key ID:  A configured ID to find the configured Message

@@ -5,7 +5,7 @@ Created on 6 jan. 2013
 '''
 from IPy import IP
 from bitstring import ConstBitStream, BitArray
-from pylisp.packet.control.locator_record import LISPLocatorRecord
+from pylisp.packet.lisp.control import LISPLocatorRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 import numbers

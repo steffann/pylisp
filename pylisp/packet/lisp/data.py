@@ -6,6 +6,8 @@ Created on 5 jan. 2013
 from bitstring import ConstBitStream, BitArray
 import collections
 import numbers
+from pylisp.packet.ip.ipv4 import IPv4Packet
+from pylisp.packet.ip.ipv6.base import IPv6Packet
 
 __all__ = ['LISPDataPacket']
 
@@ -195,7 +197,16 @@ class LISPDataPacket(object):
 
         # The rest of the packet is payload
         remaining = bitstream[bitstream.pos:]
-        packet.payload = remaining.bytes
+
+        # Parse IP packet
+        if len(remaining):
+            ip_version = remaining.peek('uint:4')
+            if ip_version == 4:
+                packet.payload = IPv4Packet.from_bytes(remaining)
+            elif ip_version == 6:
+                packet.payload = IPv6Packet.from_bytes(remaining)
+            else:
+                packet.payload = remaining.bytes
 
         # Verify that the properties make sense
         packet.sanitize()
@@ -255,9 +266,4 @@ class LISPDataPacket(object):
         else:
             bitstream += BitArray(lsb_bits)
 
-        # Determine payload
-        payload = self.payload
-        if hasattr(payload, 'to_bytes'):
-            payload = payload.to_bytes()
-
-        return bitstream.bytes + payload
+        return bitstream.bytes + bytes(self.payload)

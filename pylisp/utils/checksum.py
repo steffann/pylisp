@@ -6,6 +6,8 @@ Created on 9 jan. 2013
 
 
 def ones_complement(message):
+    message = bytes(message)
+
     # Add padding if the message has an odd number of bytes
     if len(message) % 2 == 1:
         message = message + '\x00'

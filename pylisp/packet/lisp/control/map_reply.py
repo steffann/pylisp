@@ -4,9 +4,8 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray
-from pylisp.packet.control import type_registry
-from pylisp.packet.control.base import LISPControlMessage
-from pylisp.packet.control.map_reply_record import LISPMapReplyRecord
+from pylisp.packet.lisp.control import type_registry, LISPControlMessage, \
+    LISPMapReplyRecord
 
 
 __all__ = ['LISPMapReplyMessage']
@@ -66,7 +65,7 @@ class LISPMapReplyMessage(LISPControlMessage):
         # from the Map-Request is echoed in this Nonce field of the Map-
         # Reply.  When a 24-bit value is supplied, it resides in the low-
         # order 64 bits of the nonce field.
-        if not isinstance(self.nonce, bytes) or len(self.nonce) not in (3, 8):
+        if len(bytes(self.nonce)) not in (3, 8):
             raise ValueError('Invalid nonce')
 
         # Map-Reply Record:  When the M bit is set, this field is the size of a
@@ -155,11 +154,12 @@ class LISPMapReplyMessage(LISPControlMessage):
         bitstream += BitArray('uint:8=%d' % len(self.records))
 
         # Add the nonce
-        if len(self.nonce) < 8:
-            padding_len = 8 - len(self.nonce)
+        nonce = bytes(self.nonce)
+        if len(nonce) < 8:
+            padding_len = 8 - len(nonce)
             bitstream += BitArray(8 * padding_len)
 
-        bitstream += BitArray(bytes=self.nonce)
+        bitstream += BitArray(bytes=nonce)
 
         # Add the map-reply records
         for record in self.records:

@@ -8,7 +8,7 @@ if __name__ == '__main__':
     sys.path.insert(0, '.')
     sys.path.insert(0, '..')
 
-from pylisp.packet.control import map_request
+from pylisp.packet.lisp.control import map_request
 import doctest
 import unittest
 
