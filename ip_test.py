@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-from pylisp.packet.ip.ipv4 import IPv4Packet
-from pylisp.packet.ip.ipv6 import IPv6HopByHopOptionsHeader, IPv6Packet
+from pylisp.packet.ip import IPv4Packet, IPv6Packet
 
 ip_packet_hex = ('45c00078000a0000201173c85cfe1cbdd413d814'
                  '10f610f6006437b6'
@@ -18,18 +17,6 @@ pkt_bytes = bytes(packet)
 pkt_bytes_hex = pkt_bytes.encode('hex')
 
 print ip_packet == pkt_bytes
-
-udp_message = packet.payload
-print repr(udp_message)
-print udp_message.calculate_checksum(packet.source, packet.destination)
-
-udp_msg_bytes = udp_message.to_bytes()
-udp_msg_bytes_hex = udp_msg_bytes.encode('hex')
-
-print packet.payload == udp_msg_bytes
-
-lisp_message = udp_message.payload
-print repr(lisp_message)
 
 ipv6_packet_hex = ('6000000000d611fffe80000000000000'
                    'aafad8fffeec0ea3ff02000000000000'
@@ -58,22 +45,6 @@ pkt_bytes_hex = pkt_bytes.encode('hex')
 
 print ipv6_packet == pkt_bytes
 
-udp_message = packet.payload
-print repr(udp_message)
-print udp_message.calculate_checksum(packet.source, packet.destination)
-
-udp_msg_bytes = udp_message.to_bytes()
-udp_msg_bytes_hex = udp_msg_bytes.encode('hex')
-
-print packet.payload == udp_msg_bytes
-
-hdrbytes_hex = ('3b010000000000000000000000000000')
-hdrbytes = hdrbytes_hex.decode('hex')
-hdr = IPv6HopByHopOptionsHeader.from_bytes(hdrbytes)
-print repr(hdr)
-print hdrbytes_hex
-print bytes(hdr).encode('hex')
-
 multilayer_hex = ('45000073f7734000ff1173f95f61535d'
                   '254d380104ce10f5005f0000c0ac1912'
                   '00000007600000000027113e2a008640'
@@ -86,3 +57,6 @@ multilayer = multilayer_hex.decode('hex')
 
 outer = IPv4Packet.from_bytes(multilayer)
 print repr(outer)
+print bytes(outer).encode('hex')
+print multilayer_hex
+print bytes(outer) == multilayer
