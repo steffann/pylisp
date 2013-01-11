@@ -55,7 +55,7 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
     else:
         raise ValueError('Unable to handle AFI {0}'.format(afi))
 
-    if prefix_len is not None:
+    if isinstance(address, IP) and prefix_len is not None:
         # Make a prefix out of it
         prefix = address.make_net(prefix_len)
 
