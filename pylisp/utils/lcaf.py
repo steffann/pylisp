@@ -15,11 +15,19 @@ class LCAFInstanceIP(IP):
         IP.__init__(self, data, ipversion=ipversion, make_net=make_net)
         self.instance_id = instance_id
 
+    def __repr__(self):
+        return("LCAFInstanceIP('%s', instance_id=%d)"
+               % (self.strCompressed(1), self.instance_id))
+
 
 class LCAFAutonomousSystemIP(IP):
     def __init__(self, data, ipversion=0, make_net=0, asn=0):
         IP.__init__(self, data, ipversion=ipversion, make_net=make_net)
         self.asn = asn
+
+    def __repr__(self):
+        return("LCAFAutonomousSystemIP('%s', asn=%d)"
+               % (self.strCompressed(1), self.asn))
 
 
 def read_lcaf_address_from_bitstream(bitstream, prefix_len=None):
