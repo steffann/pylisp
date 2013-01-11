@@ -6,20 +6,20 @@ Created on 9 jan. 2013
 from bitstring import ConstBitStream, BitStream
 from IPy import IP
 from pylisp.utils import checksum
+import math
 
 
 class IPv4Packet(object):
     '''
     Minimal IPv4 implementation to use in LISP Encapsulated Control Messages.
-    Options are not supported, will be dropped on input and never generated on
-    output.
+    Options are not interpreted.
     '''
 
     version = 4
 
     def __init__(self, tos=0, identification=0, dont_fragment=False,
                  more_fragments=False, fragment_offset=0, ttl=0, protocol=0,
-                 source=None, destination=None, payload=''):
+                 source=None, destination=None, options='', payload=''):
         '''
         Constructor
         '''
@@ -33,6 +33,7 @@ class IPv4Packet(object):
         self.protocol = protocol
         self.source = source
         self.destination = destination
+        self.options = options
         self.payload = payload
 
     def __repr__(self):
@@ -117,9 +118,9 @@ class IPv4Packet(object):
         packet.source = IP(bitstream.read('uint:32'))
         packet.destination = IP(bitstream.read('uint:32'))
 
-        # Skip over the options
-        option_bits = (ihl - 5) * 32
-        bitstream.read(option_bits)
+        # Read the options
+        option_len = (ihl - 5) * 4
+        packet.options = bitstream.read('bytes:%d' % option_len)
 
         # And the rest is payload
         payload_bytes = (total_length) - (ihl * 4)
@@ -144,9 +145,9 @@ class IPv4Packet(object):
         # Write the version
         bitstream = BitStream('uint:4=%d' % self.version)
 
-        # Write the header length (which is always 5 because we don't support
-        # options)
-        bitstream += BitStream('uint:4=5')
+        # Write the header length
+        options_len = math.ceil(len(self.options) / 4.0)
+        bitstream += BitStream('uint:4=%d' % (5 + options_len))
 
         # Write the type of service
         bitstream += BitStream('uint:8=%d' % self.tos)
@@ -179,6 +180,11 @@ class IPv4Packet(object):
         bitstream += BitStream('uint:32=%d, '
                                'uint:32=%d' % (self.source.ip,
                                                self.destination.ip))
+
+        # Add the options
+        bitstream += BitStream(bytes=self.options)
+        padding_len = (4 - (len(self.options) % 4)) % 4
+        bitstream += BitStream(padding_len * 8)
 
         # Calculate the header checksum and fill it in
         my_checksum = checksum.ones_complement(bitstream.bytes)
