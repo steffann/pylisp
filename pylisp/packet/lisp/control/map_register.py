@@ -4,7 +4,7 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from base import LISPControlMessage
-from bitstring import ConstBitStream, BitArray
+from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.lisp.control import type_registry, KEY_ID_HMAC_SHA_1_96, \
     KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE, LISPMapReplyRecord
 import hashlib
@@ -151,7 +151,10 @@ class LISPMapRegisterMessage(LISPControlMessage):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Read the type
         type_nr = bitstream.read('uint:4')

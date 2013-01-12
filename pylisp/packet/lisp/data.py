@@ -3,7 +3,7 @@ Created on 5 jan. 2013
 
 @author: sander
 '''
-from bitstring import ConstBitStream, BitArray
+from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.ip.ipv4 import IPv4Packet
 from pylisp.packet.ip.ipv6.base import IPv6Packet
 from pylisp.packet.ip.protocol import Protocol
@@ -137,7 +137,10 @@ class LISPDataPacket(Protocol):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Read the flags
         (nonce_present,

@@ -4,7 +4,7 @@ Created on 9 jan. 2013
 @author: sander
 '''
 from IPy import IP
-from bitstring import ConstBitStream, BitStream
+from bitstring import ConstBitStream, BitStream, Bits
 from pylisp.packet.ip import protocol_registry
 from pylisp.utils import checksum
 import math
@@ -54,7 +54,10 @@ class IPv4Packet(Protocol):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Read the version
         version = bitstream.read('uint:4')

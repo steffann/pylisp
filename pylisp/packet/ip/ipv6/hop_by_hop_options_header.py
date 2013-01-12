@@ -3,7 +3,7 @@ Created on 11 jan. 2013
 
 @author: sander
 '''
-from bitstring import BitStream, ConstBitStream
+from bitstring import BitStream, ConstBitStream, Bits
 from pylisp.packet.ip import protocol_registry
 from pylisp.packet.ip.ipv6.base import IPv6ExtensionHeader
 import math
@@ -30,7 +30,10 @@ class IPv6HopByHopOptionsHeader(IPv6ExtensionHeader):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Read the next header type
         packet.next_header = bitstream.read('uint:8')
