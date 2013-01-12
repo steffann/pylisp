@@ -3,7 +3,7 @@ Created on 9 jan. 2013
 
 @author: sander
 '''
-from bitstring import BitStream, ConstBitStream
+from bitstring import BitStream, ConstBitStream, Bits
 from pylisp.packet.ip.protocol import Protocol
 from pylisp.utils import checksum
 from pylisp.packet.ip import protocol_registry
@@ -76,7 +76,10 @@ class UDPMessage(Protocol):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Read the source and destination ports
         (packet.source_port,
