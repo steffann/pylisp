@@ -129,7 +129,7 @@ class LISPDataPacket(Protocol):
         ... # doctest: +ELLIPSIS
         [True, True, True, False, False, ..., False, False, False, False]
         >>> message.instance_id
-        >>> message.payload
+        >>> bytes(message.payload)
         ... # doctest: +ELLIPSIS
         'E\xc0\x00X5@\x00\x00\xff\x06\tJ%M8...\xdd\xa4%\x88\x01'
         '''
