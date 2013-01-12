@@ -6,18 +6,14 @@ Created on 11 jan. 2013
 from abc import abstractmethod, ABCMeta
 
 
-class Protocol(object):
+class ProtocolElement(object):
     __metaclass__ = ABCMeta
 
-    header_type = None
-
     @abstractmethod
-    def __init__(self, next_header=None, payload=''):
+    def __init__(self):
         '''
         Constructor
         '''
-        self.next_header = next_header
-        self.payload = payload
 
     def __repr__(self):
         # This works as long as we accept all properties as paramters in the
@@ -25,6 +21,12 @@ class Protocol(object):
         params = ['%s=%r' % (k, v) for k, v in self.__dict__.iteritems()]
         return '%s(%s)' % (self.__class__.__name__,
                            ', '.join(params))
+
+    def __str__(self):
+        return str(self.to_bytes())
+
+    def __bytes__(self):
+        return self.to_bytes()
 
     @abstractmethod
     def sanitize(self):
@@ -45,8 +47,17 @@ class Protocol(object):
         Create bytes from properties
         '''
 
-    def __str__(self):
-        return str(self.to_bytes())
 
-    def __bytes__(self):
-        return bytes(self.to_bytes())
+class Protocol(ProtocolElement):
+    __metaclass__ = ABCMeta
+
+    header_type = None
+
+    @abstractmethod
+    def __init__(self, next_header=None, payload=''):
+        '''
+        Constructor
+        '''
+        super(Protocol, self).__init__()
+        self.next_header = next_header
+        self.payload = payload
