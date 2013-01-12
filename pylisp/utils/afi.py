@@ -4,7 +4,7 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from IPy import IP, _checkNetaddrWorksWithPrefixlen
-from bitstring import BitArray
+from bitstring import BitArray, ConstBitStream, Bits
 
 
 def read_afi_address_from_bitstream(bitstream, prefix_len=None):
@@ -30,6 +30,13 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
     True
     '''
 
+    # Convert to ConstBitStream (if not already provided)
+    if not isinstance(bitstream, ConstBitStream):
+        if isinstance(bitstream, Bits):
+            bitstream = ConstBitStream(auto=bitstream)
+        else:
+            bitstream = ConstBitStream(bytes=bitstream)
+
     # Read the source EID
     afi = bitstream.read('uint:16')
     if afi == 0:
@@ -50,8 +57,8 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
         address = IP(address_int, ipversion=6)
 
     elif afi == 16387:
-        from pylisp.utils.lcaf import read_lcaf_address_from_bitstream
-        address = read_lcaf_address_from_bitstream(bitstream)
+        from pylisp.utils.lcaf import LCAFAddress
+        address = LCAFAddress.from_bytes(bitstream)
 
     else:
         raise ValueError('Unable to handle AFI {0}'.format(afi))
@@ -74,13 +81,22 @@ def get_bitstream_for_afi_address(address):
     if address is None:
         return BitArray(16)
 
-    if not isinstance(address, IP):
-        raise ValueError('Unsupported address')
+    if isinstance(address, IP):
+        # IPv4
+        if address.version() == 4:
+            return BitArray('uint:16=1, uint:32=%d' % address.ip)
 
-    # IPv4
-    if address.version() == 4:
-        return BitArray('uint:16=1, uint:32=%d' % address.ip)
+        # IPv6
+        if address.version() == 6:
+            return BitArray('uint:16=2, uint:128=%d' % address.ip)
 
-    # IPv6
-    if address.version() == 6:
-        return BitArray('uint:16=2, uint:128=%d' % address.ip)
+        # Fall through
+        raise ValueError('Unsupported IP address version')
+
+    from pylisp.utils.lcaf import LCAFAddress
+    if isinstance(address, LCAFAddress):
+        address_bytes = bytes(address)
+        return BitArray('uint:16=16387') + BitArray(bytes=address_bytes)
+
+    # Nobody encoded it...
+    raise ValueError('Unsupported address type')
