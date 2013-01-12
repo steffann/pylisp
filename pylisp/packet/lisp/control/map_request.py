@@ -4,7 +4,7 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from IPy import IP
-from bitstring import ConstBitStream, BitArray
+from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.lisp.control import type_registry, LISPControlMessage, \
     LISPMapReplyRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
@@ -193,7 +193,10 @@ class LISPMapRequestMessage(LISPControlMessage):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Read the message type
         type_nr = bitstream.read('uint:4')

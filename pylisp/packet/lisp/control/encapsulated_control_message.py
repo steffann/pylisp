@@ -3,7 +3,7 @@ Created on 7 jan. 2013
 
 @author: sander
 '''
-from bitstring import ConstBitStream, BitArray
+from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.lisp.control import type_registry, LISPControlMessage
 
 
@@ -88,7 +88,10 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Read the type
         type_nr = bitstream.read('uint:4')

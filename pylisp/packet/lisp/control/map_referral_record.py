@@ -4,7 +4,7 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from IPy import IP
-from bitstring import ConstBitStream, BitArray
+from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.lisp.control import LISPLocatorRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
@@ -271,7 +271,10 @@ class LISPMapReferralRecord(object):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Read the record TTL
         record.ttl = bitstream.read('uint:32')

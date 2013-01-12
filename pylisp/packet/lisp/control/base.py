@@ -4,7 +4,7 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from abc import ABCMeta, abstractmethod
-from bitstring import ConstBitStream
+from bitstring import ConstBitStream, Bits
 from pylisp.packet.ip.protocol import Protocol
 
 
@@ -16,7 +16,7 @@ class LISPControlMessage(Protocol):
     __metaclass__ = ABCMeta
 
     # Class property: which message type do we represent?
-    message_type = 0
+    message_type = None
 
     @abstractmethod
     def __init__(self):
@@ -42,7 +42,10 @@ class LISPControlMessage(Protocol):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Peek at the bitstream to see which type it is
         type_nr = bitstream.peek('uint:4')

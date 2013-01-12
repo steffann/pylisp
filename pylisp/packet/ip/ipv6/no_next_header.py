@@ -3,7 +3,7 @@ Created on 11 jan. 2013
 
 @author: sander
 '''
-from bitstring import ConstBitStream
+from bitstring import ConstBitStream, Bits
 from pylisp.packet.ip import protocol_registry
 from pylisp.packet.ip.ipv6.base import IPv6ExtensionHeader
 
@@ -30,7 +30,10 @@ class IPv6NoNextHeader(IPv6ExtensionHeader):
 
         # Convert to ConstBitStream (if not already provided)
         if not isinstance(bitstream, ConstBitStream):
-            bitstream = ConstBitStream(bytes=bitstream)
+            if isinstance(bitstream, Bits):
+                bitstream = ConstBitStream(auto=bitstream)
+            else:
+                bitstream = ConstBitStream(bytes=bitstream)
 
         # Everything is payload
         remaining = bitstream[bitstream.pos:]
