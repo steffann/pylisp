@@ -110,7 +110,7 @@ class AfiTestCase(unittest.TestCase):
         afi_address_hex = '0001c00002ab'
         bitstream = ConstBitStream(hex=afi_address_hex)
 
-        with self.assertRaisesRegexp(ValueError, 'masked'):
+        with self.assertRaisesRegexp(ValueError, 'invalid.prefix.length'):
             afi.read_afi_address_from_bitstream(bitstream, 24)
 
         self.assertEqual(bitstream.pos, bitstream.len,
@@ -157,21 +157,11 @@ class AfiTestCase(unittest.TestCase):
         afi_address_hex = '000220010db80102abcd000000000000cafe'
         bitstream = ConstBitStream(hex=afi_address_hex)
 
-        with self.assertRaisesRegexp(ValueError, 'masked'):
+        with self.assertRaisesRegexp(ValueError, 'invalid.prefix.length'):
             afi.read_afi_address_from_bitstream(bitstream, 64)
 
         self.assertEqual(bitstream.pos, bitstream.len,
                          'unprocessed bits remaining in bitstream')
-
-    def test_afi_16387(self):
-        '''
-        AFI 16387 (LCAF) addresses are recognised but not supported
-        '''
-        afi_address_hex = '4003abcdabcdabcd'
-        bitstream = ConstBitStream(hex=afi_address_hex)
-
-        with self.assertRaisesRegexp(ValueError, 'LCAF'):
-            afi.read_afi_address_from_bitstream(bitstream)
 
     def test_afi_65535(self):
         '''

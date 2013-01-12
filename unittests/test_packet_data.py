@@ -7,7 +7,7 @@ if __name__ == '__main__':
     sys.path.insert(0, '.')
     sys.path.insert(0, '..')
 
-from pylisp.packet import data
+from pylisp.packet.lisp import data
 import doctest
 import unittest
 

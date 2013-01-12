@@ -31,5 +31,9 @@ nosetests.xml
 
 # Mr Developer
 .mr.developer.cfg
+
+# Rest
 .project
 .pydevproject
+RELEASE-VERSION
+.settings
