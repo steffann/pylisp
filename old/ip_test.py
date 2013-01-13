@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+import sys
+sys.path.insert(0, '.')
+sys.path.insert(0, '..')
+
 from pylisp.packet.ip import IPv4Packet, IPv6Packet
 
 ip_packet_hex = ('45c00078000a0000201173c85cfe1cbdd413d814'
