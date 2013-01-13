@@ -3,9 +3,9 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
-from pylisp.packet.ip.protocol import ProtocolElement
 from abc import ABCMeta, abstractmethod
 from bitstring import ConstBitStream, BitArray, Bits
+from pylisp.packet.ip.protocol import ProtocolElement
 
 
 class LCAFAddress(ProtocolElement):
@@ -23,7 +23,7 @@ class LCAFAddress(ProtocolElement):
         pass
 
     @classmethod
-    def from_bytes(cls, bitstream):
+    def from_bytes(cls, bitstream, prefix_len=None):
         '''
         Look at the type of the message, instantiate the correct class and
         let it parse the message.
@@ -61,7 +61,7 @@ class LCAFAddress(ProtocolElement):
             raise ValueError("Can't handle LCAF type {0}".format(type_nr))
 
         # Let the specific class handle it from now on
-        return type_class._from_data_bytes(data)
+        return type_class._from_data_bytes(data, prefix_len)
 
     def to_bytes(self):
         '''
@@ -93,7 +93,7 @@ class LCAFAddress(ProtocolElement):
 
     @classmethod
     @abstractmethod
-    def _from_data_bytes(cls, data):
+    def _from_data_bytes(cls, data, prefix_len=None):
         '''
         The LCAF header has been parsed, now parse the data
         '''

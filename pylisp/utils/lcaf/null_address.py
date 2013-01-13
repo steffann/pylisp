@@ -3,9 +3,9 @@ Created on 12 jan. 2013
 
 @author: sander
 '''
-from pylisp.utils.lcaf.base import LCAFAddress
-from pylisp.utils.lcaf import type_registry
 from bitstring import BitArray
+from pylisp.utils.lcaf import type_registry
+from pylisp.utils.lcaf.base import LCAFAddress
 
 
 class LCAFNullAddress(LCAFAddress):
@@ -18,7 +18,7 @@ class LCAFNullAddress(LCAFAddress):
         super(LCAFNullAddress, self).sanitize()
 
     @classmethod
-    def _from_data_bytes(cls, data):
+    def _from_data_bytes(cls, data, prefix_len=None):
         lcaf = cls()
         lcaf.sanitize()
         return lcaf

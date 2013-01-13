@@ -3,8 +3,9 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
-from IPy import IP, _checkNetaddrWorksWithPrefixlen
+from IPy import IP
 from bitstring import BitArray, ConstBitStream, Bits
+from pylisp.utils import make_prefix
 
 
 def read_afi_address_from_bitstream(bitstream, prefix_len=None):
@@ -50,28 +51,22 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
         # IPv4 address
         address_int = bitstream.read('uint:32')
         address = IP(address_int, ipversion=4)
+        if prefix_len is not None:
+            address = make_prefix(address, prefix_len)
 
     elif afi == 2:
         # IPv6 address
         address_int = bitstream.read('uint:128')
         address = IP(address_int, ipversion=6)
+        if prefix_len is not None:
+            address = make_prefix(address, prefix_len)
 
     elif afi == 16387:
         from pylisp.utils.lcaf import LCAFAddress
-        address = LCAFAddress.from_bytes(bitstream)
+        address = LCAFAddress.from_bytes(bitstream, prefix_len)
 
     else:
         raise ValueError('Unable to handle AFI {0}'.format(afi))
-
-    if isinstance(address, IP) and prefix_len is not None:
-        # WARNING: Huge Ugly Hack
-        address._prefixlen = prefix_len
-
-        if not _checkNetaddrWorksWithPrefixlen(address.ip,
-                                               address._prefixlen,
-                                               address._ipversion):
-            raise ValueError("%s has invalid prefix length (%s)"
-                             % (repr(address), address._prefixlen))
 
     return address
 

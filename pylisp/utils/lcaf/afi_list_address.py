@@ -3,11 +3,12 @@ Created on 12 jan. 2013
 
 @author: sander
 '''
-from pylisp.utils.lcaf.base import LCAFAddress
-from pylisp.utils.lcaf import type_registry
+from bitstring import BitArray
+from pylisp.utils import make_prefix
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
-from bitstring import BitArray
+from pylisp.utils.lcaf import type_registry
+from pylisp.utils.lcaf.base import LCAFAddress
 
 
 class LCAFAFIListAddress(LCAFAddress):
@@ -21,10 +22,12 @@ class LCAFAFIListAddress(LCAFAddress):
         super(LCAFAFIListAddress, self).sanitize()
 
     @classmethod
-    def _from_data_bytes(cls, data):
+    def _from_data_bytes(cls, data, prefix_len=None):
         addresses = []
         while data.pos != data.len:
             address = read_afi_address_from_bitstream(data)
+            if prefix_len is not None:
+                address = make_prefix(address, prefix_len)
             addresses.append(address)
         lcaf = cls(addresses=addresses)
         lcaf.sanitize()
