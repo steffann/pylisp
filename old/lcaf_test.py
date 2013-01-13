@@ -1,7 +1,10 @@
 #!/usr/bin/env python
+import sys
+sys.path.insert(0, '.')
+sys.path.insert(0, '..')
+
 from pylisp.utils import lcaf
 from IPy import IP
-from pylisp.utils.lcaf.base import LCAFAddress
 from pylisp.utils.afi import get_bitstream_for_afi_address, \
     read_afi_address_from_bitstream
 
@@ -26,7 +29,7 @@ for address in addresses:
     print 'Original:   %r' % address
 
     address_bytes = bytes(address)
-    address2 = LCAFAddress.from_bytes(address_bytes)
+    address2 = lcaf.LCAFAddress.from_bytes(address_bytes)
 
     print 'Re-parsed:  %r' % address2
     print 'Match:      %s' % (address.__class__ == address2.__class__ and
