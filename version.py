@@ -37,14 +37,86 @@ __all__ = ("get_git_version")
 from subprocess import Popen, PIPE
 
 
-def call_git_describe(abbrev=4):
+def call_git_describe(abbrev=4, commit_hash=None):
     try:
-        p = Popen(['git', 'describe', '--abbrev=%d' % abbrev],
-                  stdout=PIPE, stderr=PIPE)
+        cmd = ['git', 'describe', '--abbrev=%d' % abbrev]
+        if commit_hash:
+            cmd.append(commit_hash)
+        p = Popen(cmd, stdout=PIPE, stderr=PIPE)
         p.stderr.close()
         line = p.stdout.readlines()[0]
         return line.strip()
 
+    except:
+        return None
+
+
+def get_git_changelog(abbrev=4):
+    my_tag = call_git_describe(abbrev)
+    prev_tag = None
+    prev_tag_commit_hash = None
+
+    # Don't do changelogs for tags with a dash: they are commits between tags
+    if '-' in my_tag:
+        return None
+
+    # Collect commits
+    commits = []
+
+    # Determine the previous version
+    try:
+        skip = 0
+        while True:
+            cmd = ['git', 'rev-list', '--tags', '--skip=%d' % skip,
+                   '--max-count=1']
+            p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+            p.stderr.close()
+
+            commit_hash = p.stdout.readlines()[0].strip()
+            if not commit_hash:
+                break
+
+            tag = call_git_describe(abbrev, commit_hash)
+            if not tag:
+                break
+
+            # Only look at tags without a dash, others are commits between tags
+            if '-' not in tag and tag != my_tag:
+                prev_tag_commit_hash = commit_hash
+                prev_tag = tag
+                break
+
+            # Get the commit entry
+            cmd = ['git', 'log', '--first-parent', '--pretty=%s', '-1', tag]
+            p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+            p.stderr.close()
+            lines = p.stdout.readlines()
+            lines = [l.strip() for l in lines]
+            commits.append(lines)
+
+            skip += 1
+
+        # Did we find it?
+        if not prev_tag:
+            return None
+
+        # Get the commit timestamp
+        cmd = ['git', 'show', '-s', '--pretty=%ci', prev_tag_commit_hash]
+        p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        p.stderr.close()
+        when = p.stdout.readlines()[0].strip()
+
+        # Build the changelog
+        header = 'Version %s' % my_tag
+        changelog = [header,
+                     '=' * len(header),
+                     'Released: %s' % when,
+                     '']
+        for commit in commits:
+            changelog += [' * %s' % commit[0]]
+            for line in commit[1:]:
+                changelog += ['   %s' % line]
+        return '\n'.join(changelog)
     except:
         return None
 
@@ -70,6 +142,12 @@ def write_release_version(version):
     f.close()
 
 
+def write_changelog(version, changelog):
+    f = open("changes/ChangeLog-%s.md" % version, "w")
+    f.write('%s\n' % changelog)
+    f.close()
+
+
 def get_git_version(abbrev=4):
     # Read in the version that's currently in RELEASE-VERSION.
     release_version = read_release_version()
@@ -90,6 +168,11 @@ def get_git_version(abbrev=4):
     # RELEASE-VERSION file, update the file to be current.
     if version != release_version:
         write_release_version(version)
+
+    # Get the changelog
+    changelog = get_git_changelog()
+    if changelog:
+        write_changelog(version, changelog)
 
     # Finally, return the current version.
     return version
