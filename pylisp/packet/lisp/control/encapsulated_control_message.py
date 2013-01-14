@@ -4,6 +4,7 @@ Created on 7 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray, Bits
+from pylisp.packet.ip import IPv4Packet, IPv6Packet
 from pylisp.packet.lisp.control import type_registry, LISPControlMessage
 
 
@@ -115,7 +116,16 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
 
         # The rest of the packet is payload
         remaining = bitstream[bitstream.pos:]
-        packet.payload = remaining.bytes
+
+        # Parse IP packet
+        if len(remaining):
+            ip_version = remaining.peek('uint:4')
+            if ip_version == 4:
+                packet.payload = IPv4Packet.from_bytes(remaining)
+            elif ip_version == 6:
+                packet.payload = IPv6Packet.from_bytes(remaining)
+            else:
+                packet.payload = remaining.bytes
 
         # Verify that the properties make sense
         packet.sanitize()
