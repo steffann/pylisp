@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+# encoding: utf-8
+'''
+LISPd manages all LISP control packets sent and received by
+a system. It listens on UDP port 4342, dispatches incoming
+requests to the configurable modules and can send requests
+to other systems on behalf of other applications.
+'''
+
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from pylisp.application.lispd.query_processor import QueryProcessor
+from pylisp.packet.lisp.control.base import LISPControlMessage
+import os
+import select
+import socket
+import sys
+from pylisp.application.lispd import settings
+from IPy import IP
+
+
+def main(argv=None):
+    '''Command line options.'''
+
+    if argv is None:
+        argv = sys.argv
+    else:
+        sys.argv.extend(argv)
+
+    program_name = os.path.basename(sys.argv[0])
+
+    try:
+        # Setup argument parser
+        parser = ArgumentParser(description=__doc__,
+                                formatter_class=RawDescriptionHelpFormatter)
+        parser.add_argument("-v",
+                            "--verbose",
+                            dest="verbose",
+                            action="count",
+                            help="set verbosity level [default: %(default)s]")
+
+        # Process arguments
+        args = parser.parse_args()
+
+        # Init the real settings
+        settings.config = settings.Settings(verbose=args.verbose)
+
+        # Determine local sockets
+        sockets = []
+        for sockaddr in settings.config.listen_on:
+            ip_address = IP(sockaddr[0])
+
+            if settings.config.verbose:
+                print("Binding to %s port %d" % (ip_address, sockaddr[1]))
+
+            if ip_address.version() == 4:
+                family = socket.AF_INET
+            else:
+                family = socket.AF_INET6
+
+            sock = socket.socket(family, socket.SOCK_DGRAM, socket.SOL_UDP)
+            sock.bind(sockaddr)
+            sockets.append(sock)
+
+        if settings.config.verbose:
+            print("Waiting for incoming messages")
+
+        while True:
+            try:
+                rlist, dummy, dummy = select.select(sockets, [], [])
+
+                if settings.config.verbose:
+                    print("Processing sockets")
+
+                for sock in rlist:
+                    data, addr = sock.recvfrom(65536)
+                    if settings.config.verbose:
+                        print("Received %d bytes from %r" % (len(data), addr))
+
+                    try:
+                        msg = LISPControlMessage.from_bytes(data)
+                    except Exception, e:
+                        if settings.config.verbose:
+                            print("Error in message: %s" % e)
+
+                    try:
+                        proc = QueryProcessor(sockets, msg)
+                        proc.start()
+                    except Exception, e:
+                        if settings.config.verbose:
+                            print("Error %s while handling message %r" % (e,
+                                                                          msg))
+            except KeyboardInterrupt:
+                if settings.config.verbose:
+                    print("Interupted")
+                break
+            except Exception, e:
+                if settings.config.verbose:
+                    print("Unexpected exception: %s" % e)
+
+        if settings.config.verbose:
+            print("Shutting down")
+
+        return 0
+    except KeyboardInterrupt:
+        ### handle keyboard interrupt ###
+        return 0
+    except Exception, e:
+        indent = len(program_name) * " "
+        sys.stderr.write(program_name + ": " + repr(e) + "\n")
+        sys.stderr.write(indent + "  for help use --help")
+        return 2
+
+if __name__ == "__main__":
+    sys.exit(main())
