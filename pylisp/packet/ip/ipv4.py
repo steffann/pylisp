@@ -39,6 +39,9 @@ class IPv4Packet(Protocol):
         self.options = options
         self.payload = payload
 
+    def get_final_payload(self):
+        return (self.protocol, self.payload)
+
     def sanitize(self):
         '''
         Check if the current settings conform to the RFC and fix where possible
