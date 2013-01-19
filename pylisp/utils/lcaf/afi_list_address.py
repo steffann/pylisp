@@ -22,7 +22,8 @@ class LCAFAFIListAddress(LCAFAddress):
         super(LCAFAFIListAddress, self).sanitize()
 
     @classmethod
-    def _from_data_bytes(cls, data, prefix_len=None):
+    def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,
+                         rsvd2=None):
         addresses = []
         while data.pos != data.len:
             address = read_afi_address_from_bitstream(data)

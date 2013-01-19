@@ -23,7 +23,8 @@ class LCAFAutonomousSystemAddress(LCAFAddress):
         super(LCAFAutonomousSystemAddress, self).sanitize()
 
     @classmethod
-    def _from_data_bytes(cls, data, prefix_len=None):
+    def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,
+                         rsvd2=None):
         asn = data.read('uint:32')
         address = read_afi_address_from_bitstream(data)
         if prefix_len is not None:
