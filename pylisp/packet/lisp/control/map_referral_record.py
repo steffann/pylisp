@@ -196,9 +196,9 @@ class LISPMapReferralRecord(object):
                 raise ValueError('MS-ACK messages must have TTL=1440')
 
         elif self.action == self.ACT_MS_NOT_REGISTERED:
-            if self.ttl != 1440:
+            if self.ttl != 1:
                 raise ValueError('MS-NOT-REGISTERED messages must have '
-                                 'TTL=1440')
+                                 'TTL=1')
 
         elif self.action == self.ACT_DELEGATION_HOLE:
             if self.incomplete:
@@ -209,11 +209,11 @@ class LISPMapReferralRecord(object):
                 raise ValueError('DELEGATION-HOLE messages can not have '
                                  'locators')
 
-            if self.ttl != 1440:
+            if self.ttl != 15:
                 raise ValueError('DELEGATION-HOLE messages must have TTL=15')
 
         elif self.action == self.ACT_NOT_AUTHORITATIVE:
-            if self.incomplete:
+            if not self.incomplete:
                 raise ValueError('NOT-AUTHORITATIVE messages must be '
                                  'incomplete')
 
@@ -221,7 +221,7 @@ class LISPMapReferralRecord(object):
                 raise ValueError('NOT-AUTHORITATIVE messages can not have '
                                  'locators')
 
-            if self.ttl != 1440:
+            if self.ttl != 0:
                 raise ValueError('NOT-AUTHORITATIVE messages must have TTL=0')
 
         # WARNING: http://tools.ietf.org/html/draft-ietf-lisp-ddt-00
