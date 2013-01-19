@@ -120,8 +120,10 @@ class LISPMapRequestMessage(LISPControlMessage):
         # Requests are used for refreshing a map-cache entry or for RLOC-
         # probing, an AFI value 0 is used and this field is of zero length.
         if self.source_eid is not None:
-            if not isinstance(self.source_eid, IP) \
-            or self.source_eid.len() != 1:
+#            if not isinstance(self.source_eid, IP) \
+#            or self.source_eid.len() != 1:
+#                raise ValueError('Invalid source EID: %r' % self.source_eid)
+            if self.source_eid.len() != 1:
                 raise ValueError('Invalid source EID')
 
         # ITR-RLOC Address:  Used to give the ETR the option of selecting the
@@ -143,9 +145,9 @@ class LISPMapRequestMessage(LISPControlMessage):
         # prefix used in the Map-Request has the same mask-length as the
         # EID-prefix returned from the site when it sent a Map-Reply
         # message.
-        for eid_prefix in self.eid_prefixes:
-            if not isinstance(eid_prefix, IP):
-                raise ValueError('Invalid EID prefix')
+#        for eid_prefix in self.eid_prefixes:
+#            if not isinstance(eid_prefix, IP):
+#                raise ValueError('Invalid EID prefix')
 
         # Map-Reply Record:  When the M bit is set, this field is the size of a
         # single "Record" in the Map-Reply format.  This Map-Reply record
