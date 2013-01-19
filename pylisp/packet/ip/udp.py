@@ -67,6 +67,38 @@ class UDPMessage(Protocol):
         # Calculate the checksum
         return checksum.ones_complement(pseudo_header + message)
 
+    def get_lisp_message(self, only_data=False, only_control=False):
+        # Check the UDP ports
+        lisp_data = (self.source_port == 4341
+                     or self.destination_port == 4341)
+        lisp_control = (self.source_port == 4342
+                        or self.destination_port == 4342)
+
+        if lisp_data and lisp_control:
+            raise ValueError("Cannot mix LISP data and control ports")
+
+        from pylisp.packet.lisp.control.base import LISPControlMessage
+        from pylisp.packet.lisp.data import LISPDataPacket
+
+        if lisp_data or only_data:
+            if not isinstance(self.payload, LISPDataPacket):
+                raise ValueError("Payload is not a LISP data packet")
+            return self.payload
+
+        elif lisp_control or only_control:
+            if not isinstance(self.payload, LISPControlMessage):
+                raise ValueError("Payload is not a LISP control message")
+            return self.payload
+
+        else:
+            raise ValueError("No LISP content found")
+
+    def get_lisp_data_packet(self):
+        return self.get_lisp_message(only_data=True)
+
+    def get_lisp_control_message(self):
+        return self.get_lisp_message(only_control=True)
+
     @classmethod
     def from_bytes(cls, bitstream):
         '''
