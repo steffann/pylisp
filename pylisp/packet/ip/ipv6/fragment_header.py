@@ -4,9 +4,9 @@ Created on 11 jan. 2013
 @author: sander
 '''
 from bitstring import BitStream, ConstBitStream, Bits
+from pylisp.packet.ip import protocol_registry
 from pylisp.packet.ip.ipv6.base import IPv6ExtensionHeader
 import math
-from pylisp.packet.ip import protocol_registry
 
 
 class IPv6FragmentHeader(IPv6ExtensionHeader):

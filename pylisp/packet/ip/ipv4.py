@@ -39,6 +39,9 @@ class IPv4Packet(Protocol):
         self.options = options
         self.payload = payload
 
+    def is_fragmented(self):
+        return self.more_fragments or self.fragment_offset != 0
+
     def get_final_payload(self):
         return (self.protocol, self.payload)
 

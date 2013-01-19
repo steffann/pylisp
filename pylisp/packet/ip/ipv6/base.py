@@ -5,8 +5,8 @@ Created on 9 jan. 2013
 '''
 from IPy import IP
 from bitstring import ConstBitStream, BitStream, Bits
-from pylisp.packet.ip.protocol import Protocol
 from pylisp.packet.ip import protocol_registry
+from pylisp.packet.ip.protocol import Protocol
 
 
 class IPv6Packet(Protocol):
@@ -32,6 +32,20 @@ class IPv6Packet(Protocol):
         self.source = source
         self.destination = destination
         self.payload = payload
+
+    def is_fragmented(self):
+        from pylisp.packet.ip.ipv6.fragment_header import IPv6FragmentHeader
+
+        header = self.payload
+
+        while isinstance(header, IPv6ExtensionHeader) \
+        and header.next_header is not None:
+            if isinstance(header, IPv6FragmentHeader):
+                return True
+
+            header = header.payload
+
+        return False
 
     def get_final_payload(self):
         next_header = self.next_header
