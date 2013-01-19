@@ -6,6 +6,7 @@ Created on 7 jan. 2013
 from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.ip import IPv4Packet, IPv6Packet
 from pylisp.packet.lisp.control import type_registry, LISPControlMessage
+from pylisp.packet.ip.udp import UDPMessage
 
 
 __all__ = ['LISPEncapsulatedControlMessage']
@@ -25,9 +26,6 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         self.security = security
         self.ddt_originated = ddt_originated
         self.payload = payload
-
-        # TODO: actually en/decode the control message
-        #       this needs an IPv4, IPv6 and UDP packet implementation
 
     def sanitize(self):
         '''
@@ -60,6 +58,22 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         # control messages are for further study.  When Map-Requests are
         # sent for RLOC-probing purposes (i.e the probe-bit is set), they
         # MUST NOT be sent inside Encapsulated Control Messages.
+
+    def get_udp(self):
+        # Encapsulated, look inside
+        if not isinstance(self.payload, (IPv4Packet, IPv6Packet)):
+            raise ValueError("Payload doesn't contain an IP header")
+
+        # Don't try to interpret fragments
+        if self.payload.is_fragmented():
+            raise ValueError("Can't get UDP layer from a fragment")
+
+        # Get to the upper layer protocol
+        (proto_nr, udp) = self.payload.get_final_payload()
+        if proto_nr != 17 or not isinstance(udp, UDPMessage):
+            raise ValueError("IP payload is not UDP")
+
+        return udp
 
     @classmethod
     def from_bytes(cls, bitstream):
