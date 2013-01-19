@@ -122,7 +122,7 @@ class LISPMapReferralMessage(LISPControlMessage):
 
         # Add the records
         for record in self.records:
-            bitstream += record.to_bytes()
+            bitstream += record.to_bitstream()
 
         return bitstream.bytes
 
