@@ -3,16 +3,18 @@ Created on 15 jan. 2013
 
 @author: sander
 '''
+import logging
+import multiprocessing.dummy as mp
 import os
 import socket
 import sys
 
+# Get the logger
+logger = logging.getLogger(__name__)
+
 
 class Settings(object):
-    def __init__(self, verbose=0, only_defaults=False):
-        # Set verbose
-        self.verbose = verbose
-
+    def __init__(self, only_defaults=False):
         # Someone might want to know if there is more than the defaults
         self.only_defaults = only_defaults
 
@@ -24,7 +26,20 @@ class Settings(object):
             self.apply_config_files()
 
     def set_defaults(self):
+        # A list of tuples containing an IP address and a port number
         self.listen_on = self.default_listen_on()
+
+        # A list of message handlers. Each handler must be a subclass of
+        # LISPMessageHandler.
+        self.handlers = []
+
+        # Set the default number of threads
+        self.thead_pool_size = None
+        try:
+            self.thead_pool_size = mp.cpu_count()
+        except NotImplementedError:
+            logger.warning('Can not determine the number of CPUs, you might'
+                           'want to configure the thead_pool_size manually')
 
     def default_listen_on(self):
         # Listen to the IP addresses that correspond with my hostname
@@ -47,7 +62,7 @@ class Settings(object):
 
     def apply_config_files(self):
         # Execute potential configuration files in the current context so they
-        # can manupulate it
+        # can manipulate it
         for filename in self.get_potential_config_files():
             filename = os.path.expanduser(filename)
             filename = os.path.realpath(filename)
@@ -55,13 +70,10 @@ class Settings(object):
             try:
                 exec(compile(open(filename).read(), filename, 'exec'),
                      self.__dict__)
-                if self.verbose >= 1:
-                    print("Imported settings from %s" % filename)
+                logger.info("Imported settings from %s" % filename)
             except IOError, e:
-                if self.verbose >= 2:
-                    print("Could not import settings from %s: %s"
-                          % (filename, e))
-
+                logger.debug("Could not import settings from %s: %s",
+                             filename, e)
 
 # Common configuration
 config = Settings(only_defaults=True)

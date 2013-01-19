@@ -1,25 +1,83 @@
 #!/usr/bin/env python
 # encoding: utf-8
-'''
+"""
 LISPd manages all LISP control packets sent and received by
-a system. It listens on UDP port 4342, dispatches incoming
-requests to the configurable modules and can send requests
-to other systems on behalf of other applications.
-'''
+a system. By default it listens on UDP port 4342, dispatches
+incoming requests to the configurable modules and can send
+requests to other systems on behalf of other applications.
+"""
 
+from IPy import IP
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-from pylisp.application.lispd.query_processor import QueryProcessor
+from pylisp.application.lispd import settings
+from pylisp.application.lispd.message_handler import LISPMessageHandler
 from pylisp.packet.lisp.control.base import LISPControlMessage
+import logging
+import multiprocessing.dummy as mp
 import os
 import select
 import socket
 import sys
-from pylisp.application.lispd import settings
-from IPy import IP
+
+
+def create_sockets():
+    sockets = []
+    for sockaddr in settings.config.listen_on:
+        ip_address = IP(sockaddr[0])
+
+        logging.info("Binding to %s port %d" % (ip_address, sockaddr[1]))
+
+        if ip_address.version() == 4:
+            family = socket.AF_INET
+        else:
+            family = socket.AF_INET6
+
+        sock = socket.socket(family, socket.SOCK_DGRAM, socket.SOL_UDP)
+        sock.bind(sockaddr)
+        sockets.append(sock)
+
+    return sockets
+
+
+def handle_message(message, source, sockets):
+    # Sanity check
+    if not isinstance(message, LISPControlMessage):
+        logging.error("Non-LISP message detected: %r", message)
+        return False
+
+    # Let the handlers try to handle it
+    for handler in settings.config.handlers:
+        # Sanity check
+        if not isinstance(handler, LISPMessageHandler):
+            logging.error("Invalid handler %r found, skipping", handler)
+            continue
+
+        # Handled?
+        try:
+            handled = handler.handle(message=message,
+                                     source=source,
+                                     sockets=sockets)
+        except Exception, e:
+            logging.error("Unexpected exception %r from handler %r", e,
+                          handler, exc_info=True)
+            continue
+
+        if handled:
+            logging.debug("Hander %r has handled message %r", handler, message)
+            return handled
+        else:
+            logging.debug("Hander %r has NOT handled message %r", handler,
+                         message)
+
+    logging.warning("No handler handled a %s from %r",
+                   message.__class__.__name__, source)
+    logging.debug("Unhandled message: %r", message)
+
+    return False
 
 
 def main(argv=None):
-    '''Command line options.'''
+    """Command line options."""
 
     if argv is None:
         argv = sys.argv
@@ -35,70 +93,86 @@ def main(argv=None):
         parser.add_argument("-v",
                             "--verbose",
                             dest="verbose",
-                            action="count",
-                            help="set verbosity level [default: %(default)s]")
+                            action="store_true",
+                            help="be verbose")
+        parser.add_argument("-d",
+                            "--debug",
+                            dest="debug",
+                            action="store_true",
+                            help="show debugging output")
+        parser.add_argument("-C",
+                            "--show-config",
+                            dest="show_config",
+                            action="store_true",
+                            help="show the configuration and exit")
 
         # Process arguments
         args = parser.parse_args()
 
-        # Init the real settings
-        settings.config = settings.Settings(verbose=args.verbose)
+        # Configure the logging process
+        if args.debug:
+            logging_level = logging.DEBUG
+        elif args.verbose:
+            logging_level = logging.INFO
+        else:
+            logging_level = logging.WARNING
+
+        logging.basicConfig(level=logging_level)
+
+        # Init the settings
+        settings.config = settings.Settings()
+
+        # Show config?
+        if args.show_config:
+            for setting, value in settings.config.__dict__.iteritems():
+                # Skip internal data
+                if setting == 'only_defaults' or setting.startswith('_'):
+                    continue
+
+                # Show the setting
+                sys.stdout.write("%s=%r\n" % (setting, value))
+            return 2
 
         # Determine local sockets
-        sockets = []
-        for sockaddr in settings.config.listen_on:
-            ip_address = IP(sockaddr[0])
+        sockets = create_sockets()
 
-            if settings.config.verbose:
-                print("Binding to %s port %d" % (ip_address, sockaddr[1]))
+        # Create the thread pool
+        pool = mp.Pool(processes=settings.config.thead_pool_size)
 
-            if ip_address.version() == 4:
-                family = socket.AF_INET
-            else:
-                family = socket.AF_INET6
-
-            sock = socket.socket(family, socket.SOCK_DGRAM, socket.SOL_UDP)
-            sock.bind(sockaddr)
-            sockets.append(sock)
-
-        if settings.config.verbose:
-            print("Waiting for incoming messages")
+        logging.info("Waiting for incoming messages to process")
 
         while True:
             try:
+                # Get the active sockets
                 rlist, dummy, dummy = select.select(sockets, [], [])
-
-                if settings.config.verbose:
-                    print("Processing sockets")
 
                 for sock in rlist:
                     data, addr = sock.recvfrom(65536)
-                    if settings.config.verbose:
-                        print("Received %d bytes from %r" % (len(data), addr))
+                    logging.debug("Received %d bytes from %r", len(data), addr)
 
+                    # Parse input
                     try:
-                        msg = LISPControlMessage.from_bytes(data)
+                        message = LISPControlMessage.from_bytes(data)
                     except Exception, e:
-                        if settings.config.verbose:
-                            print("Error in message: %s" % e)
+                        logging.error("Error in message from %r: %s", addr, e)
 
+                    # Dispatch
                     try:
-                        proc = QueryProcessor(sockets, msg)
-                        proc.start()
+                        pool.apply_async(handle_message,
+                                         kwds={'sockets': sockets,
+                                               'message': message,
+                                               'source': addr})
                     except Exception, e:
-                        if settings.config.verbose:
-                            print("Error %s while handling message %r" % (e,
-                                                                          msg))
+                        logging.error("Uncaught exception when handling "
+                                      "message from %r: %s", addr, e)
+
             except KeyboardInterrupt:
-                if settings.config.verbose:
-                    print("Interupted")
+                logging.info("Interupted")
                 break
             except Exception, e:
-                if settings.config.verbose:
-                    print("Unexpected exception: %s" % e)
+                logging.error("Unexpected exception: %s" % e)
 
-        if settings.config.verbose:
-            print("Shutting down")
+        logging.info("Shutting down")
 
         return 0
     except KeyboardInterrupt:
@@ -109,6 +183,7 @@ def main(argv=None):
         sys.stderr.write(program_name + ": " + repr(e) + "\n")
         sys.stderr.write(indent + "  for help use --help")
         return 2
+
 
 if __name__ == "__main__":
     sys.exit(main())
