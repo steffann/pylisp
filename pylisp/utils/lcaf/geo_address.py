@@ -62,7 +62,8 @@ class LCAFGeoAddress(LCAFAddress):
         super(LCAFGeoAddress, self).sanitize()
 
     @classmethod
-    def _from_data_bytes(cls, data, prefix_len=None):
+    def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,
+                         rsvd2=None):
         (north, latitude_degrees, latitude_minutes,
          latitude_seconds) = data.readlist('bool, uint:15, 2*uint:8')
         (east, longitude_degrees, longitude_minutes,

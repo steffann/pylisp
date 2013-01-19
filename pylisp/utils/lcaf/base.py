@@ -36,17 +36,16 @@ class LCAFAddress(ProtocolElement):
                 bitstream = ConstBitStream(bytes=bitstream)
 
         # Skip the reserved bits
-        bitstream.read(8)
+        rsvd1 = bitstream.read(8)
 
         # Read the flags (and ignore them, no flags are defined yet)
         flags = bitstream.readlist('8*bool')
-        del(flags)
 
         # Read the type
         type_nr = bitstream.read('uint:8')
 
         # Skip the reserved bits
-        bitstream.read(8)
+        rsvd2 = bitstream.read(8)
 
         # Read the length
         length = bitstream.read('uint:16')
@@ -61,7 +60,8 @@ class LCAFAddress(ProtocolElement):
             raise ValueError("Can't handle LCAF type {0}".format(type_nr))
 
         # Let the specific class handle it from now on
-        return type_class._from_data_bytes(data, prefix_len)
+        return type_class._from_data_bytes(data, prefix_len,
+                                           rsvd1, flags, rsvd2)
 
     def to_bytes(self):
         '''
@@ -71,16 +71,16 @@ class LCAFAddress(ProtocolElement):
         self.sanitize()
 
         # Start with reserved bits
-        bitstream = BitArray(8)
+        bitstream = self._to_rsvd1()
 
         # Add zeroes for the flags
-        bitstream += BitArray(8)
+        bitstream += self._to_flags()
 
         # Add the type
         bitstream += BitArray('uint:8=%d' % self.lcaf_type)
 
         # Some more reserved bits
-        bitstream += BitArray(8)
+        bitstream += self._to_rsvd2()
 
         # Construct the data
         data = self._to_data_bytes()
@@ -93,10 +93,20 @@ class LCAFAddress(ProtocolElement):
 
     @classmethod
     @abstractmethod
-    def _from_data_bytes(cls, data, prefix_len=None):
+    def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,
+                         rsvd2=None):
         '''
         The LCAF header has been parsed, now parse the data
         '''
+
+    def _to_rsvd1(self):
+        return BitArray(8)
+
+    def _to_flags(self):
+        return BitArray(8)
+
+    def _to_rsvd2(self):
+        return BitArray(8)
 
     @abstractmethod
     def _to_data_bytes(self):
