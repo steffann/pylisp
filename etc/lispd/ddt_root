@@ -1,0 +1,70 @@
+# FORMAT: InstanceID EID-AFI EID-Prefix MAP_SERVER # ASN | Organisation | Contact
+0 1 37.77.56.0/21 2001:9e0:411:1::10 # AS57771 | SJM Steffann | Sander Steffann <sander@steffann.nl>
+0 1 37.77.56.0/21 2001:9e0:810:1::10 # AS57771 | SJM Steffann | Sander Steffann <sander@steffann.nl>
+0 1 37.77.56.0/21 83.247.10.218 # AS57771 | SJM Steffann | Sander Steffann <sander@steffann.nl>
+0 1 37.77.56.0/21 87.195.109.18 # AS57771 | SJM Steffann | Sander Steffann <sander@steffann.nl>
+0 1 38.125.5.0/24 199.119.73.6 # AS17169 | VXNet.com | Paul Vinciguerra 
+0 1 38.125.5.0/24 2607:1F00:0:4::6 # AS17169 | VXNet.com | Paul Vinciguerra 
+0 1 85.184.3.0/24 193.162.145.50 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.3.0/24 195.50.116.18 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.3.0/24 217.8.98.42 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.3.0/24 217.8.98.46 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.64.0/23 193.162.145.50 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.64.0/23 195.50.116.18 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.64.0/23 217.8.98.42 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.64.0/23 217.8.98.46 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.184.0/24 2001:67C:21B4:8954:111::1 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.184.0/24 2001:67C:21B4:8954:111::2 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.184.0/24 217.8.111.1 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 85.184.184.0/24 217.8.111.2 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 1 153.16.0.0/16 158.38.1.91 # AS3943 | LISP Beta Network | <lisp-ops@external.cisco.com>
+0 1 153.16.0.0/16 173.36.254.167 # AS3943 | LISP Beta Network | <lisp-ops@external.cisco.com>
+0 1 153.16.0.0/16 208.217.187.20 # AS3943 | LISP Beta Network | <lisp-ops@external.cisco.com>
+0 1 194.226.139.0/24 194.149.90.118 # AS33842 | Cross Tel | <shopik@crosstelecom.ru>
+0 1 199.119.72.0/24 199.119.73.6 # AS17169 | VXNet.com | Paul Vinciguerra 
+0 1 199.119.72.0/24 2607:1F00:0:4::6 # AS17169 | VXNet.com | Paul Vinciguerra 
+0 1 199.119.75.0/24 199.119.73.6 # AS17169 | VXNet.com | Paul Vinciguerra 
+0 1 199.119.75.0/24 2607:1F00:0:4::6 # AS17169 | VXNet.com | Paul Vinciguerra 
+0 1 199.212.124.0/24 149.20.48.61 # ASN16881 | Dave Prall LLC | Dave Prall <dprall@cisco.com>
+0 1 199.212.124.0/24 173.36.254.164 # ASN16881 | Dave Prall LLC | Dave Prall <dprall@cisco.com>
+0 1 199.212.124.0/24 198.6.255.37 # ASN16881 | Dave Prall LLC | Dave Prall <dprall@cisco.com>
+0 1 199.212.124.0/24 206.223.132.89 # ASN16881 | Dave Prall LLC | Dave Prall <dprall@cisco.com>
+
+0 2 2001:67c:208c::/48 217.8.98.42 # AS15562 | Job Snijders | Job Snijders 
+0 2 2001:67c:208c::/48 217.8.98.46 # AS15562 | Job Snijders | Job Snijders 
+0 2 2001:67c:208c::/48 83.247.10.218 # AS15562 | Job Snijders | Job Snijders 
+0 2 2001:67c:208c::/48 87.195.109.18 # AS15562 | Job Snijders | Job Snijders 
+0 2 2001:67c:208c::/48 2001:9e0:411:1::10 # AS15562 | Job Snijders | Job Snijders 
+0 2 2001:67c:208c::/48 2001:9e0:810:1::10 # AS15562 | Job Snijders | Job Snijders 
+0 2 2001:67c:208c::/48 2001:67C:21B4:109::B # AS15562 | Job Snijders | Job Snijders 
+0 2 2001:67c:208c::/48 2001:67C:21B4:110::B # AS15562 | Job Snijders | Job Snijders 
+
+0 2 2001:6e0:5::/48 193.162.145.50 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 2 2001:6e0:5::/48 195.50.116.18 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 2 2001:6e0:5::/48 217.8.98.42 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 2 2001:6e0:5::/48 217.8.98.46 # AS8935 | InTouch NV | Tech <tech@intouch.eu>
+0 2 2604:a800:1::0/48 149.20.48.61 # AS3943 | State of ark? | <lisp-ops@external.cisco.com>
+0 2 2604:a800:1::0/48 173.36.254.164 # AS3943 | State of ark? | <lisp-ops@external.cisco.com>
+0 2 2604:a800:1::0/48 198.6.255.37 # AS3943 | State of ark? | <lisp-ops@external.cisco.com>
+0 2 2604:a800:1::0/48 206.223.132.89 # AS3943 | State of ark? | <lisp-ops@external.cisco.com>
+0 2 2610:d0::/32 158.38.1.91 # AS3943 | LISP Beta Network | <lisp-ops@external.cisco.com>
+0 2 2610:d0::/32 173.36.254.167 # AS3943 | LISP Beta Network | <lisp-ops@external.cisco.com>
+0 2 2610:d0::/32 208.217.187.20 # AS3943 | LISP Beta Network | <lisp-ops@external.cisco.com>
+0 2 2620:EE:8000::/48 149.20.48.61 # ASN16881 | Dave Prall LLC | Dave Prall <dprall@cisco.com>
+0 2 2620:EE:8000::/48 173.36.254.164 # ASN16881 | Dave Prall LLC | Dave Prall <dprall@cisco.com>
+0 2 2620:EE:8000::/48 198.6.255.37 # ASN16881 | Dave Prall LLC | Dave Prall <dprall@cisco.com>
+0 2 2620:EE:8000::/48 206.223.132.89 # ASN16881 | Dave Prall LLC | Dave Prall <dprall@cisco.com>
+0 2 2706:1F00:1::/48 199.119.73.6 # AS17169 | VXNet.com | Paul Vinciguerra 
+0 2 2706:1F00:1::/48 2607:1F00:0:4::6 # AS17169 | VXNet.com | Paul Vinciguerra 
+0 2 2a00:8640::/32 2001:9e0:411:1::10 # AS57771 | SJM Steffann | Sander Steffann <sander@steffann.nl>
+0 2 2a00:8640::/32 2001:9e0:810:1::10 # AS57771 | SJM Steffann | Sander Steffann <sander@steffann.nl>
+0 2 2a00:8640::/32 83.247.10.218 # AS57771 | SJM Steffann | Sander Steffann <sander@steffann.nl>
+0 2 2a00:8640::/32 87.195.109.18 # AS57771 | SJM Steffann | Sander Steffann <sander@steffann.nl>
+0 2 2a01:111:300b::/64 149.20.48.61 # AS?? | MSN | scott w.
+0 2 2a01:111:300b::/64 173.36.254.164 # AS?? | MSN | scott w.
+0 2 2a01:111:300b::/64 198.6.255.37 # AS?? | MSN | scott w.
+0 2 2a01:111:300b::/64 206.223.132.89 # AS?? | MSN | scott w.
+
+223 0 0 158.38.1.91 # Cisco testing
+223 0 0 173.36.254.167 # Cisco testing
+223 0 0 208.217.187.20 # Cisco testing

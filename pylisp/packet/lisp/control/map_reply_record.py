@@ -5,16 +5,16 @@ Created on 6 jan. 2013
 '''
 from IPy import IP
 from bitstring import ConstBitStream, BitArray, Bits
-from pylisp.packet.lisp.control import LISPLocatorRecord
+from pylisp.packet.lisp.control import LocatorRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 import numbers
 
 
-__all__ = ['LISPMapReplyRecord']
+__all__ = ['MapReplyRecord']
 
 
-class LISPMapReplyRecord(object):
+class MapReplyRecord(object):
     # The actions defined are used by an ITR or PITR when a
     # destination EID matches a negative mapping cache entry.
     # Unassigned values should cause a map-cache entry to be created
@@ -127,7 +127,7 @@ class LISPMapReplyRecord(object):
 
         # Check locator records
         for locator_record in self.locator_records:
-            if not isinstance(locator_record, LISPLocatorRecord):
+            if not isinstance(locator_record, LocatorRecord):
                 raise ValueError('Invalid Locator record')
 
             locator_record.sanitize()
@@ -173,7 +173,7 @@ class LISPMapReplyRecord(object):
 
         # Read the locator records
         for dummy in range(locator_record_count):
-            locator_record = LISPLocatorRecord.from_bytes(bitstream)
+            locator_record = LocatorRecord.from_bytes(bitstream)
             record.locator_records.append(locator_record)
 
         # Verify that the properties make sense

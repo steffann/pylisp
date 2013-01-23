@@ -4,14 +4,14 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray, Bits
-from pylisp.packet.lisp.control import type_registry, LISPControlMessage, \
-    LISPMapReplyRecord
+from pylisp.packet.lisp.control import type_registry, ControlMessage, \
+    MapReplyRecord
 
 
-__all__ = ['LISPMapReplyMessage']
+__all__ = ['MapReplyMessage']
 
 
-class LISPMapReplyMessage(LISPControlMessage):
+class MapReplyMessage(ControlMessage):
     # Class property: which message type do we represent?
     message_type = 2
 
@@ -20,7 +20,7 @@ class LISPMapReplyMessage(LISPControlMessage):
         '''
         Constructor
         '''
-        super(LISPMapReplyMessage, self).__init__()
+        super(MapReplyMessage, self).__init__()
 
         # Set defaults
         self.probe = probe
@@ -34,7 +34,7 @@ class LISPMapReplyMessage(LISPControlMessage):
         Check if the current settings conform to the LISP specifications and
         fix them where possible.
         '''
-        super(LISPMapReplyMessage, self).sanitize()
+        super(MapReplyMessage, self).sanitize()
 
         # P: This is the probe-bit which indicates that the Map-Reply is in
         # response to a locator reachability probe Map-Request.  The nonce
@@ -74,7 +74,7 @@ class LISPMapReplyMessage(LISPControlMessage):
         # EID.  This allows the ETR which will receive this Map-Request to
         # cache the data if it chooses to do so.
         for record in self.records:
-            if not isinstance(record, LISPMapReplyRecord):
+            if not isinstance(record, MapReplyRecord):
                 raise ValueError('Invalid record')
 
             record.sanitize()
@@ -116,7 +116,7 @@ class LISPMapReplyMessage(LISPControlMessage):
 
         # Read the records
         for dummy in range(record_count):
-            record = LISPMapReplyRecord.from_bytes(bitstream)
+            record = MapReplyRecord.from_bytes(bitstream)
             packet.records.append(record)
 
         # If the security flag is set then there should be security data left
@@ -178,4 +178,4 @@ class LISPMapReplyMessage(LISPControlMessage):
 
 
 # Register this class in the registry
-type_registry.register_type_class(LISPMapReplyMessage)
+type_registry.register_type_class(MapReplyMessage)

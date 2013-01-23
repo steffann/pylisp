@@ -3,18 +3,18 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
-from base import LISPControlMessage
+from base import ControlMessage
 from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.lisp.control import type_registry, KEY_ID_HMAC_SHA_1_96, \
-    KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE, LISPMapReplyRecord
+    KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE, MapReplyRecord
 import hashlib
 import hmac
 
 
-__all__ = ['LISPMapRegisterMessage']
+__all__ = ['MapRegisterMessage']
 
 
-class LISPMapRegisterMessage(LISPControlMessage):
+class MapRegisterMessage(ControlMessage):
     # Class property: which message type do we represent?
     message_type = 3
 
@@ -24,7 +24,7 @@ class LISPMapRegisterMessage(LISPControlMessage):
         '''
         Constructor
         '''
-        super(LISPMapRegisterMessage, self).__init__()
+        super(MapRegisterMessage, self).__init__()
 
         # Set defaults
         self.proxy_map_reply = proxy_map_reply
@@ -39,7 +39,7 @@ class LISPMapRegisterMessage(LISPControlMessage):
         Check if the current settings conform to the LISP specifications and
         fix them where possible.
         '''
-        super(LISPMapRegisterMessage, self).sanitize()
+        super(MapRegisterMessage, self).sanitize()
 
         # P: This is the proxy-map-reply bit, when set to 1 an ETR sends a Map-
         # Register message requesting for the Map-Server to proxy Map-Reply.
@@ -87,7 +87,7 @@ class LISPMapRegisterMessage(LISPControlMessage):
         # EID.  This allows the ETR which will receive this Map-Request to
         # cache the data if it chooses to do so.
         for record in self.records:
-            if not isinstance(record, LISPMapReplyRecord):
+            if not isinstance(record, MapReplyRecord):
                 raise ValueError('Invalid record')
 
             record.sanitize()
@@ -187,7 +187,7 @@ class LISPMapRegisterMessage(LISPControlMessage):
 
         # Read the records
         for dummy in range(record_count):
-            record = LISPMapReplyRecord.from_bytes(bitstream)
+            record = MapReplyRecord.from_bytes(bitstream)
             packet.records.append(record)
 
         # There should be no remaining bits
@@ -238,4 +238,4 @@ class LISPMapRegisterMessage(LISPControlMessage):
 
 
 # Register this class in the registry
-type_registry.register_type_class(LISPMapRegisterMessage)
+type_registry.register_type_class(MapRegisterMessage)

@@ -8,7 +8,7 @@ from bitstring import ConstBitStream, Bits
 from pylisp.packet.ip.protocol import Protocol
 
 
-class LISPControlMessage(Protocol):
+class ControlMessage(Protocol):
     '''
     This is the abstract base class for all LISP control packets
     '''

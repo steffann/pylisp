@@ -7,7 +7,7 @@ if __name__ == '__main__':
     sys.path.insert(0, '..')
 
 from copy import copy
-from pylisp.packet.lisp.control import type_registry, LISPControlMessage
+from pylisp.packet.lisp.control import type_registry, ControlMessage
 import doctest
 import unittest
 
@@ -39,7 +39,7 @@ class TypeRegistryTestCase(unittest.TestCase):
         '''
         Normal registration of a type class
         '''
-        class ValidType(LISPControlMessage):
+        class ValidType(ControlMessage):
             message_type = 1
 
         type_registry.register_type_class(ValidType)
@@ -60,7 +60,7 @@ class TypeRegistryTestCase(unittest.TestCase):
         '''
         Try to register a class of the wrong type
         '''
-        class WrongType(LISPControlMessage):
+        class WrongType(ControlMessage):
             message_type = 16
 
         with self.assertRaisesRegexp(ValueError, 'message.type'):
@@ -70,7 +70,7 @@ class TypeRegistryTestCase(unittest.TestCase):
         '''
         Try to register the same class twice
         '''
-        class ValidType(LISPControlMessage):
+        class ValidType(ControlMessage):
             message_type = 1
 
         type_registry.register_type_class(ValidType)
@@ -85,10 +85,10 @@ class TypeRegistryTestCase(unittest.TestCase):
         '''
         Try to register two classes for the same type
         '''
-        class ValidType1(LISPControlMessage):
+        class ValidType1(ControlMessage):
             message_type = 1
 
-        class ValidType2(LISPControlMessage):
+        class ValidType2(ControlMessage):
             message_type = 1
 
         type_registry.register_type_class(ValidType1)

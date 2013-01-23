@@ -77,16 +77,16 @@ class UDPMessage(Protocol):
         if lisp_data and lisp_control:
             raise ValueError("Cannot mix LISP data and control ports")
 
-        from pylisp.packet.lisp.control.base import LISPControlMessage
-        from pylisp.packet.lisp.data import LISPDataPacket
+        from pylisp.packet.lisp.control.base import ControlMessage
+        from pylisp.packet.lisp.data import DataPacket
 
         if lisp_data or only_data:
-            if not isinstance(self.payload, LISPDataPacket):
+            if not isinstance(self.payload, DataPacket):
                 raise ValueError("Payload is not a LISP data packet")
             return self.payload
 
         elif lisp_control or only_control:
-            if not isinstance(self.payload, LISPControlMessage):
+            if not isinstance(self.payload, ControlMessage):
                 raise ValueError("Payload is not a LISP control message")
             return self.payload
 
@@ -132,12 +132,12 @@ class UDPMessage(Protocol):
         # LISP-specific handling
         if packet.source_port == 4341 or packet.destination_port == 4341:
             # Payload is a LISP data packet
-            from pylisp.packet.lisp.data import LISPDataPacket
-            packet.payload = LISPDataPacket.from_bytes(packet.payload)
+            from pylisp.packet.lisp.data import DataPacket
+            packet.payload = DataPacket.from_bytes(packet.payload)
         elif packet.source_port == 4342 or packet.destination_port == 4342:
             # Payload is a LISP control message
-            from pylisp.packet.lisp.control.base import LISPControlMessage
-            packet.payload = LISPControlMessage.from_bytes(packet.payload)
+            from pylisp.packet.lisp.control.base import ControlMessage
+            packet.payload = ControlMessage.from_bytes(packet.payload)
 
         # There should be no remaining bits
         if bitstream.pos != bitstream.len:

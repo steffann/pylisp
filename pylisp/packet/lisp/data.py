@@ -10,10 +10,10 @@ from pylisp.packet.ip.protocol import Protocol
 import collections
 import numbers
 
-__all__ = ['LISPDataPacket']
+__all__ = ['DataPacket']
 
 
-class LISPDataPacket(Protocol):
+class DataPacket(Protocol):
     '''
     classdocs
     '''
@@ -118,7 +118,7 @@ class LISPDataPacket(Protocol):
         ...             'c5268078f365ee199179fbd09d09d690'
         ...             '193622a6b70bcbc7bf5f20dda4258801')
         >>> data = data_hex.decode('hex')
-        >>> message = LISPDataPacket.from_bytes(data)
+        >>> message = DataPacket.from_bytes(data)
         >>> message.echo_nonce_request
         False
         >>> message.nonce
@@ -214,8 +214,8 @@ class LISPDataPacket(Protocol):
         r'''
         Create bytes from properties
 
-        >>> message = LISPDataPacket(nonce='XyZ', instance_id=1234,
-        ...                          payload='SomeDummyPayloadData')
+        >>> message = DataPacket(nonce='XyZ', instance_id=1234,
+        ...                      payload='SomeDummyPayloadData')
         >>> message.to_bytes()
         '\x88XyZ\x00\x04\xd2\x00SomeDummyPayloadData'
         '''

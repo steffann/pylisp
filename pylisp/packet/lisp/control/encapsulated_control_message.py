@@ -5,14 +5,14 @@ Created on 7 jan. 2013
 '''
 from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.ip import IPv4Packet, IPv6Packet
-from pylisp.packet.lisp.control import type_registry, LISPControlMessage
+from pylisp.packet.lisp.control import type_registry, ControlMessage
 from pylisp.packet.ip.udp import UDPMessage
 
 
-__all__ = ['LISPEncapsulatedControlMessage']
+__all__ = ['EncapsulatedControlMessage']
 
 
-class LISPEncapsulatedControlMessage(LISPControlMessage):
+class EncapsulatedControlMessage(ControlMessage):
     # Class property: which message type do we represent?
     message_type = 8
 
@@ -20,7 +20,7 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         '''
         Constructor
         '''
-        super(LISPEncapsulatedControlMessage, self).__init__()
+        super(EncapsulatedControlMessage, self).__init__()
 
         # Set defaults
         self.security = security
@@ -32,7 +32,7 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         Check if the current settings conform to the LISP specifications and
         fix them where possible.
         '''
-        super(LISPEncapsulatedControlMessage, self).sanitize()
+        super(EncapsulatedControlMessage, self).sanitize()
 
         # S: This is the Security bit.  When set to 1 the following
         # authentication information will be appended to the end of the Map-
@@ -90,7 +90,7 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         ...             '85000b000000000000000001000f0002'
         ...             '2a020000000000000000000000000000')
         >>> data = data_hex.decode('hex')
-        >>> message = LISPEncapsulatedControlMessage.from_bytes(data)
+        >>> message = EncapsulatedControlMessage.from_bytes(data)
         >>> message.security
         False
         >>> message.ddt_originated
@@ -150,7 +150,7 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
         r'''
         Create bytes from properties
 
-        >>> message = LISPEncapsulatedControlMessage(payload='Dummy')
+        >>> message = EncapsulatedControlMessage(payload='Dummy')
         >>> message.to_bytes()
         '\x80\x00\x00\x00Dummy'
         '''
@@ -176,4 +176,4 @@ class LISPEncapsulatedControlMessage(LISPControlMessage):
 
 
 # Register this class in the registry
-type_registry.register_type_class(LISPEncapsulatedControlMessage)
+type_registry.register_type_class(EncapsulatedControlMessage)

@@ -4,7 +4,7 @@ Created on 6 jan. 2013
 @author: sander
 '''
 import numbers
-from pylisp.packet.lisp.control import LISPControlMessage
+from pylisp.packet.lisp.control import ControlMessage
 
 # Store supported message types and their classes
 _type_classes = {}
@@ -15,8 +15,8 @@ __all__ = ['register_type_class', 'get_type_class']
 
 def register_type_class(type_class):
     # Check for valid class
-    if not issubclass(type_class, LISPControlMessage):
-        msg = 'Message type classes must be subclasses of LISPControlMessage'
+    if not issubclass(type_class, ControlMessage):
+        msg = 'Message type classes must be subclasses of ControlMessage'
         raise ValueError(msg)
 
     # Check for valid type numbers
