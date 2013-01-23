@@ -95,7 +95,7 @@ class EncapsulatedControlMessage(ControlMessage):
         False
         >>> message.ddt_originated
         False
-        >>> message.payload
+        >>> bytes(message.payload)
         ... # doctest: +ELLIPSIS
         'n\x00\x00\x00\x00H\x11...\x00\x00'
         '''
