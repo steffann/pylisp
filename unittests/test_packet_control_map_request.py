@@ -26,7 +26,7 @@ class MapRequestTestCase(unittest.TestCase):
 
     cases = [PacketTest(name='test_minimal_map_request',
                         desc='Generate a minimal map request',
-                        cls=map_request.LISPMapRequestMessage,
+                        cls=map_request.MapRequestMessage,
                         params={'itr_rlocs': [IP('1.2.3.4')],
                                 'eid_prefixes': [IP('192.0.2.0/24')]},
                         bytes_hex='1000000100000000000000000000'

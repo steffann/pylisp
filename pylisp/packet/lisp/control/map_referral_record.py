@@ -5,16 +5,16 @@ Created on 6 jan. 2013
 '''
 from IPy import IP
 from bitstring import ConstBitStream, BitArray, Bits
-from pylisp.packet.lisp.control import LISPLocatorRecord
+from pylisp.packet.lisp.control import LocatorRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 import numbers
 
 
-__all__ = ['LISPMapReferralRecord']
+__all__ = ['MapReferralRecord']
 
 
-class LISPMapReferralRecord(object):
+class MapReferralRecord(object):
     # ACT: The "action" field of the mapping record in a Map-Referral
     # message encodes 6 action types.  The values for the action types are:
     #
@@ -251,7 +251,7 @@ class LISPMapReferralRecord(object):
         # Check locator records
         # The local and probed_locator bits aren't used in this context
         for locator_record in self.locator_records:
-            if not isinstance(locator_record, LISPLocatorRecord) \
+            if not isinstance(locator_record, LocatorRecord) \
             or locator_record.local or locator_record.probed_locator:
                 raise ValueError('Invalid Locator record')
 
@@ -307,7 +307,7 @@ class LISPMapReferralRecord(object):
 
         # Read the locator records
         for dummy in range(referral_count):
-            locator_record = LISPLocatorRecord.from_bytes(bitstream)
+            locator_record = LocatorRecord.from_bytes(bitstream)
             record.locator_records.append(locator_record)
 
         # TODO: Can't handle signatures yet!

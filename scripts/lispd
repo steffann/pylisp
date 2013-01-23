@@ -9,15 +9,20 @@ requests to other systems on behalf of other applications.
 
 from IPy import IP
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from multiprocessing.dummy import Pool
 from pylisp.application.lispd import settings
-from pylisp.application.lispd.message_handler import LISPMessageHandler
-from pylisp.packet.lisp.control.base import LISPControlMessage
+from pylisp.application.lispd.fallback_handler import fallback_handler
+from pylisp.application.lispd.message_handler import MessageHandler
+from pylisp.application.lispd.received_message import ReceivedMessage
+from pylisp.packet.lisp.control import ControlMessage
 import logging
-import multiprocessing.dummy as mp
 import os
 import select
 import socket
 import sys
+
+
+logger = logging.root
 
 
 def create_sockets():
@@ -25,7 +30,7 @@ def create_sockets():
     for sockaddr in settings.config.listen_on:
         ip_address = IP(sockaddr[0])
 
-        logging.info("Binding to %s port %d" % (ip_address, sockaddr[1]))
+        logger.info("Binding to %s port %d" % (ip_address, sockaddr[1]))
 
         if ip_address.version() == 4:
             family = socket.AF_INET
@@ -39,41 +44,43 @@ def create_sockets():
     return sockets
 
 
-def handle_message(message, source, sockets):
-    # Sanity check
-    if not isinstance(message, LISPControlMessage):
-        logging.error("Non-LISP message detected: %r", message)
-        return False
+def handle_message(received_message, my_sockets):
+    logger.debug("Handling message %d from %r: %r",
+                 received_message.message_nr,
+                 received_message.source,
+                 received_message.message)
 
     # Let the handlers try to handle it
     for handler in settings.config.handlers:
         # Sanity check
-        if not isinstance(handler, LISPMessageHandler):
-            logging.error("Invalid handler %r found, skipping", handler)
+        if not isinstance(handler, MessageHandler):
+            logger.error("Invalid handler %r found, skipping", handler)
             continue
 
         # Handled?
         try:
-            handled = handler.handle(message=message,
-                                     source=source,
-                                     sockets=sockets)
+            handled = handler.handle(received_message=received_message,
+                                     my_sockets=my_sockets)
         except Exception, e:
-            logging.error("Unexpected exception %r from handler %r", e,
-                          handler, exc_info=True)
+            logger.error("Unexpected exception %r from handler %r while "
+                          "handling message %d", e, handler,
+                          received_message.message_nr,
+                          exc_info=True)
             continue
 
         if handled:
-            logging.debug("Hander %r has handled message %r", handler, message)
+            logger.debug("Hander %r has handled message %d", handler,
+                         received_message.message_nr)
             return handled
         else:
-            logging.debug("Hander %r has NOT handled message %r", handler,
-                         message)
+            logger.debug("Hander %r has NOT handled message %d", handler,
+                         received_message.message_nr)
 
-    logging.warning("No handler handled a %s from %r",
-                   message.__class__.__name__, source)
-    logging.debug("Unhandled message: %r", message)
+    logger.warning("No handler handled message %d, using fallback",
+                   received_message.message_nr)
 
-    return False
+    return fallback_handler.handle(received_message=received_message,
+                                   my_sockets=my_sockets)
 
 
 def main(argv=None):
@@ -137,9 +144,9 @@ def main(argv=None):
         sockets = create_sockets()
 
         # Create the thread pool
-        pool = mp.Pool(processes=settings.config.thead_pool_size)
+        pool = Pool(processes=settings.config.thead_pool_size)
 
-        logging.info("Waiting for incoming messages to process")
+        logger.info("Waiting for incoming messages to process")
 
         while True:
             try:
@@ -148,31 +155,34 @@ def main(argv=None):
 
                 for sock in rlist:
                     data, addr = sock.recvfrom(65536)
-                    logging.debug("Received %d bytes from %r", len(data), addr)
+                    logger.debug("Received %d bytes from %r", len(data), addr)
 
                     # Parse input
                     try:
-                        message = LISPControlMessage.from_bytes(data)
+                        message = ControlMessage.from_bytes(data)
+                        received_message = ReceivedMessage(message=message,
+                                                           source=addr,
+                                                           socket=sock)
                     except Exception, e:
-                        logging.error("Error in message from %r: %s", addr, e)
+                        logger.error("Error in message from %r: %s", addr, e)
 
                     # Dispatch
                     try:
+                        kwds = {'received_message': received_message,
+                                'my_sockets': sockets}
                         pool.apply_async(handle_message,
-                                         kwds={'sockets': sockets,
-                                               'message': message,
-                                               'source': addr})
+                                         kwds=kwds)
                     except Exception, e:
-                        logging.error("Uncaught exception when handling "
+                        logger.error("Uncaught exception when handling "
                                       "message from %r: %s", addr, e)
 
             except KeyboardInterrupt:
-                logging.info("Interupted")
+                logger.info("Interupted")
                 break
             except Exception, e:
-                logging.error("Unexpected exception: %s" % e)
+                logger.error("Unexpected exception: %s" % e)
 
-        logging.info("Shutting down")
+        logger.info("Shutting down")
 
         return 0
     except KeyboardInterrupt:
@@ -181,7 +191,7 @@ def main(argv=None):
     except Exception, e:
         indent = len(program_name) * " "
         sys.stderr.write(program_name + ": " + repr(e) + "\n")
-        sys.stderr.write(indent + "  for help use --help")
+        sys.stderr.write(indent + "  for help use --help\n")
         return 2
 
 

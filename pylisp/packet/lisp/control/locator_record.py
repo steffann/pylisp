@@ -10,10 +10,10 @@ from pylisp.utils.afi import read_afi_address_from_bitstream, \
 import numbers
 
 
-__all__ = ['LISPLocatorRecord']
+__all__ = ['LocatorRecord']
 
 
-class LISPLocatorRecord(object):
+class LocatorRecord(object):
     def __init__(self, priority=255, weight=0, m_priority=255, m_weight=0,
                  local=False, probed_locator=False, reachable=False,
                  locator=None):

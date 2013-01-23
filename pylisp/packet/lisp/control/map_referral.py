@@ -4,14 +4,14 @@ Created on 7 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray, Bits
-from pylisp.packet.lisp.control import type_registry, LISPControlMessage, \
-    LISPMapReferralRecord
+from pylisp.packet.lisp.control import type_registry, ControlMessage, \
+    MapReferralRecord
 
 
-__all__ = ['LISPMapReferralMessage']
+__all__ = ['MapReferralMessage']
 
 
-class LISPMapReferralMessage(LISPControlMessage):
+class MapReferralMessage(ControlMessage):
     # Class property: which message type do we represent?
     message_type = 6
 
@@ -19,7 +19,7 @@ class LISPMapReferralMessage(LISPControlMessage):
         '''
         Constructor
         '''
-        super(LISPMapReferralMessage, self).__init__()
+        super(MapReferralMessage, self).__init__()
 
         # Set defaults
         self.nonce = nonce
@@ -30,7 +30,7 @@ class LISPMapReferralMessage(LISPControlMessage):
         Check if the current settings conform to the LISP specifications and
         fix them where possible.
         '''
-        super(LISPMapReferralMessage, self).sanitize()
+        super(MapReferralMessage, self).sanitize()
 
         # WARNING: http://tools.ietf.org/html/draft-ietf-lisp-ddt-00
         # does not define this field so the description is taken from
@@ -52,7 +52,7 @@ class LISPMapReferralMessage(LISPControlMessage):
         # EID.  This allows the ETR which will receive this Map-Request to
         # cache the data if it chooses to do so.
         for record in self.records:
-            if not isinstance(record, LISPMapReferralRecord):
+            if not isinstance(record, MapReferralRecord):
                 raise ValueError('Invalid record')
 
             record.sanitize()
@@ -89,7 +89,7 @@ class LISPMapReferralMessage(LISPControlMessage):
 
         # Read the records
         for dummy in range(record_count):
-            record = LISPMapReferralRecord.from_bytes(bitstream)
+            record = MapReferralRecord.from_bytes(bitstream)
             packet.records.append(record)
 
         # There should be no remaining bits
@@ -128,4 +128,4 @@ class LISPMapReferralMessage(LISPControlMessage):
 
 
 # Register this class in the registry
-type_registry.register_type_class(LISPMapReferralMessage)
+type_registry.register_type_class(MapReferralMessage)

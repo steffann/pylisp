@@ -5,16 +5,16 @@ Created on 6 jan. 2013
 '''
 from IPy import IP
 from bitstring import ConstBitStream, BitArray, Bits
-from pylisp.packet.lisp.control import type_registry, LISPControlMessage, \
-    LISPMapReplyRecord
+from pylisp.packet.lisp.control import type_registry, ControlMessage, \
+    MapReplyRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 
 
-__all__ = ['LISPMapRequestMessage']
+__all__ = ['MapRequestMessage']
 
 
-class LISPMapRequestMessage(LISPControlMessage):
+class MapRequestMessage(ControlMessage):
     # Class property: which message type do we represent?
     message_type = 1
 
@@ -25,7 +25,7 @@ class LISPMapRequestMessage(LISPControlMessage):
         '''
         Constructor
         '''
-        super(LISPMapRequestMessage, self).__init__()
+        super(MapRequestMessage, self).__init__()
 
         # Set defaults
         self.authoritative = authoritative
@@ -44,7 +44,7 @@ class LISPMapRequestMessage(LISPControlMessage):
         Check if the current settings conform to the LISP specifications and
         fix them where possible.
         '''
-        super(LISPMapRequestMessage, self).sanitize()
+        super(MapRequestMessage, self).sanitize()
 
         # A: This is an authoritative bit, which is set to 0 for UDP-based Map-
         # Requests sent by an ITR.  Set to 1 when an ITR wants the
@@ -155,7 +155,7 @@ class LISPMapRequestMessage(LISPControlMessage):
         # EID.  This allows the ETR which will receive this Map-Request to
         # cache the data if it chooses to do so.
         if self.map_reply is not None:
-            if not isinstance(self.map_reply, LISPMapReplyRecord):
+            if not isinstance(self.map_reply, MapReplyRecord):
                 raise ValueError('Invalid Map-Reply')
 
             self.map_reply.sanitize()
@@ -168,7 +168,7 @@ class LISPMapRequestMessage(LISPControlMessage):
         >>> data_hex = ('13000001ae92b5574f849cd00001ac10'
         ...             '1f0300015cfe1cbd00200001ac101f01')
         >>> data = data_hex.decode('hex')
-        >>> message = LISPControlMessage.from_bytes(data)
+        >>> message = ControlMessage.from_bytes(data)
         >>> message.message_type
         1
         >>> message.authoritative
@@ -249,7 +249,7 @@ class LISPMapRequestMessage(LISPControlMessage):
 
         # Read the map-reply record if present
         if map_data_present:
-            packet.map_reply = LISPMapReplyRecord.from_bytes(bitstream)
+            packet.map_reply = MapReplyRecord.from_bytes(bitstream)
 
         # There should be no remaining bits
         if bitstream.pos != bitstream.len:
@@ -264,7 +264,7 @@ class LISPMapRequestMessage(LISPControlMessage):
         r'''
         Create bytes from properties
 
-        >>> message = LISPMapRequestMessage(itr_rlocs=[IP('192.0.2.1')],
+        >>> message = MapRequestMessage(itr_rlocs=[IP('192.0.2.1')],
         ...                                 eid_prefixes=[IP('2001:db8::/32')])
         >>> hex = message.to_bytes().encode('hex')
         >>> hex[:40]
@@ -323,4 +323,4 @@ class LISPMapRequestMessage(LISPControlMessage):
 
 
 # Register this class in the registry
-type_registry.register_type_class(LISPMapRequestMessage)
+type_registry.register_type_class(MapRequestMessage)
