@@ -24,11 +24,11 @@ class DDTRootHandler(DDTMessageHandler):
         for filename in possible_root_files:
             try:
                 with open(filename) as root_file:
-                    # Store the filename
-                    self.root = filename
-
                     logger.info("Reading root data from %s" % filename)
                     self.read_root_file(root_file)
+
+                    # Store the filename
+                    self.root = filename
                 break
             except IOError, e:
                 logger.debug("Could not import root data from %s: %s",
