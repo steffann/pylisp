@@ -6,14 +6,14 @@ Created on 5 jan. 2013
 from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.ip.ipv4 import IPv4Packet
 from pylisp.packet.ip.ipv6.base import IPv6Packet
-from pylisp.packet.ip.protocol import Protocol
+from pylisp.packet.ip.protocol import ProtocolElement
 import collections
 import numbers
 
 __all__ = ['DataPacket']
 
 
-class DataPacket(Protocol):
+class DataPacket(ProtocolElement):
     '''
     classdocs
     '''
