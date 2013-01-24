@@ -39,7 +39,7 @@ class DDTMessageHandler(MessageHandler):
                                  req_prefix, received_message.message_nr)
             req_prefix = LCAFInstanceAddress(instance_id=0, address=req_prefix)
 
-        # TODO: Implement security
+        # TODO: Implement security [LISP-Security]
         if ecm.security:
             logger.error("This handler can't handle security")
             return False

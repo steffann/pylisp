@@ -123,7 +123,7 @@ class EncapsulatedControlMessage(ControlMessage):
         bitstream.read(26)
 
         # If the security flag is set then there should be security data here
-        # TODO: deal with it
+        # TODO: deal with security flag [LISP-Security]
         if packet.security:
             raise NotImplementedError('Handling security data is not ' +
                                       'implemented yet')

@@ -26,6 +26,7 @@ class IPv6FragmentHeader(IPv6ExtensionHeader):
         '''
         Check and optionally fix properties
         '''
+        # TODO: implement
 
     @classmethod
     def from_bytes(cls, bitstream):
