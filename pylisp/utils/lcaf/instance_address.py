@@ -20,11 +20,12 @@ class LCAFInstanceAddress(LCAFAddress):
         self.address = address
         self.iid_mask_len = iid_mask_len
 
+    def get_addresses(self):
+        return [self.address]
+
     def sanitize(self):
         super(LCAFInstanceAddress, self).sanitize()
-
-    def __getattr__(self, name):
-        return getattr(self.address, name)
+        # TODO: implement
 
     @classmethod
     def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,

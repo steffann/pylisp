@@ -22,6 +22,14 @@ class LCAFAddress(ProtocolElement):
     def sanitize(self):
         pass
 
+    @abstractmethod
+    def get_addresses(self):
+        """
+        Return a list of addresses contained in this LCA so that verification
+        functions have one access point to get to the content (if the content
+        consists of one or more addresses)
+        """
+
     @classmethod
     def from_bytes(cls, bitstream, prefix_len=None):
         '''
@@ -113,21 +121,3 @@ class LCAFAddress(ProtocolElement):
         '''
         The LCAF header has been generated, now generate the data
         '''
-
-
-#    elif lcaf_type == 4:
-#        tos_tc_flowlabel = data.read('uint:24')
-#        protocol = data.read('uint:8')
-#        local_port, remote_port = data.readlist('2*uint:16')
-#        address = read_afi_address_from_bitstream(data)
-#        return {'tos_tc_flowlabel': tos_tc_flowlabel,
-#                'protocol': protocol,
-#                'local_port': local_port,
-#                'remote_port': remote_port,
-#                'address': address}
-#    elif lcaf_type == 6:
-#        return {'key': data.bytes}
-#    else:
-#        # Just give back the damn data
-#        return {'type': lcaf_type,
-#                'data': data.bytes}

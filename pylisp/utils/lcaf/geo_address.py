@@ -30,6 +30,9 @@ class LCAFGeoAddress(LCAFAddress):
         self.altitude = altitude
         self.address = address
 
+    def get_addresses(self):
+        return [self.address]
+
     def _get_latitude(self):
         return (self.latitude_degrees +
                 (self.latitude_minutes / 60.0) +
@@ -60,6 +63,7 @@ class LCAFGeoAddress(LCAFAddress):
 
     def sanitize(self):
         super(LCAFGeoAddress, self).sanitize()
+        # TODO: implement
 
     @classmethod
     def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,

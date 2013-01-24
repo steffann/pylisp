@@ -19,8 +19,12 @@ class LCAFAutonomousSystemAddress(LCAFAddress):
         self.asn = asn
         self.address = address
 
+    def get_addresses(self):
+        return [self.address]
+
     def sanitize(self):
         super(LCAFAutonomousSystemAddress, self).sanitize()
+        # TODO: implement
 
     @classmethod
     def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,
