@@ -14,8 +14,12 @@ class LCAFNullAddress(LCAFAddress):
     def __init__(self):
         super(LCAFNullAddress, self).__init__()
 
+    def get_addresses(self):
+        return []
+
     def sanitize(self):
         super(LCAFNullAddress, self).sanitize()
+        # TODO: implement
 
     @classmethod
     def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,

@@ -18,8 +18,12 @@ class LCAFAFIListAddress(LCAFAddress):
         super(LCAFAFIListAddress, self).__init__()
         self.addresses = addresses or []
 
+    def get_addresses(self):
+        return self.addresses
+
     def sanitize(self):
         super(LCAFAFIListAddress, self).sanitize()
+        # TODO: implement
 
     @classmethod
     def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,
