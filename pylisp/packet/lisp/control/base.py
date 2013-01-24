@@ -5,10 +5,10 @@ Created on 6 jan. 2013
 '''
 from abc import ABCMeta, abstractmethod
 from bitstring import ConstBitStream, Bits
-from pylisp.packet.ip.protocol import Protocol
+from pylisp.packet.ip.protocol import ProtocolElement
 
 
-class ControlMessage(Protocol):
+class ControlMessage(ProtocolElement):
     '''
     This is the abstract base class for all LISP control packets
     '''
