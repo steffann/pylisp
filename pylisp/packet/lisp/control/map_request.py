@@ -9,6 +9,7 @@ from pylisp.packet.lisp.control import type_registry, ControlMessage, \
     MapReplyRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
+from pylisp.utils.lcaf.base import LCAFAddress
 
 
 __all__ = ['MapRequestMessage']
@@ -120,11 +121,19 @@ class MapRequestMessage(ControlMessage):
         # Requests are used for refreshing a map-cache entry or for RLOC-
         # probing, an AFI value 0 is used and this field is of zero length.
         if self.source_eid is not None:
-#            if not isinstance(self.source_eid, IP) \
-#            or self.source_eid.len() != 1:
-#                raise ValueError('Invalid source EID: %r' % self.source_eid)
-            if self.source_eid.len() != 1:
-                raise ValueError('Invalid source EID')
+            # Extract the address(es)
+            if isinstance(self.source_eid, LCAFAddress):
+                addresses = self.source_eid.get_addresses()
+            else:
+                addresses = [self.source_eid]
+
+            # We must have exactly one address
+            if len(addresses) != 1:
+                raise ValueError('Source EID must be one address')
+
+            if not isinstance(addresses[0], IP) \
+            or addresses[0].len() != 1:
+                raise ValueError('Invalid source EID: %r' % self.source_eid)
 
         # ITR-RLOC Address:  Used to give the ETR the option of selecting the
         # destination address from any address family for the Map-Reply
@@ -145,9 +154,16 @@ class MapRequestMessage(ControlMessage):
         # prefix used in the Map-Request has the same mask-length as the
         # EID-prefix returned from the site when it sent a Map-Reply
         # message.
-#        for eid_prefix in self.eid_prefixes:
-#            if not isinstance(eid_prefix, IP):
-#                raise ValueError('Invalid EID prefix')
+        for eid_prefix in self.eid_prefixes:
+            # Extract the address(es)
+            if isinstance(eid_prefix, LCAFAddress):
+                addresses = eid_prefix.get_addresses()
+            else:
+                addresses = [eid_prefix]
+
+            for address in addresses:
+                if not isinstance(address, IP):
+                    raise ValueError('Invalid EID prefix: %r', address)
 
         # Map-Reply Record:  When the M bit is set, this field is the size of a
         # single "Record" in the Map-Reply format.  This Map-Reply record

@@ -9,6 +9,7 @@ from pylisp.packet.lisp.control import LocatorRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 import numbers
+from pylisp.utils.lcaf.instance_address import LCAFInstanceAddress
 
 
 __all__ = ['MapReferralRecord']
@@ -241,12 +242,15 @@ class MapReferralRecord(object):
         or self.map_version >= 2 ** 12:
             raise ValueError('Invalid map version')
 
-        # EID-prefix:  4 octets if an IPv4 address-family, 16 octets if an IPv6
+        # EID-prefix: 4 octets if an IPv4 address-family, 16 octets if an IPv6
         # address-family.
-# Disable until we have proper LCAF support
-#        if not isinstance(self.eid_prefix, IP) \
-#        or self.eid_prefix.version() not in (4, 6):
-#            raise ValueError('EID prefix must be IPv4 or IPv6')
+        if not isinstance(self.eid_prefix, LCAFInstanceAddress):
+            if not isinstance(self.eid_prefix, IP):
+                raise ValueError("Unexpected EID prefix %r", self.eid_prefix)
+
+            # Wrap in LCAF address with Instance ID
+            self.eid_prefix = LCAFInstanceAddress(instance_id=0,
+                                                  address=self.eid_prefix)
 
         # Check locator records
         # The local and probed_locator bits aren't used in this context
@@ -259,7 +263,7 @@ class MapReferralRecord(object):
 
         # Check signatures
         for dummy in self.signatures:
-            # TODO: Implement signatures
+            # TODO: Implement signatures [LISP-Security]
             pass
 
     @classmethod
@@ -310,7 +314,7 @@ class MapReferralRecord(object):
             locator_record = LocatorRecord.from_bytes(bitstream)
             record.locator_records.append(locator_record)
 
-        # TODO: Can't handle signatures yet!
+        # TODO: Can't handle signatures yet! [LISP-Security]
         if sig_count:
             raise NotImplementedError('Cannot handle signatures yet')
 
@@ -364,7 +368,7 @@ class MapReferralRecord(object):
         for locator_record in self.locator_records:
             bitstream += locator_record.to_bitstream()
 
-        # TODO: Can't handle signatures yet!
+        # TODO: Can't handle signatures yet! [LISP-Security]
         if self.signatures:
             raise NotImplementedError('Cannot handle signatures yet')
 

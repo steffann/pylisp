@@ -7,6 +7,7 @@ from bitstring import BitStream, ConstBitStream, Bits
 from pylisp.packet.ip.protocol import Protocol
 from pylisp.utils import checksum
 from pylisp.packet.ip import protocol_registry
+import numbers
 
 
 class UDPMessage(Protocol):
@@ -14,16 +15,30 @@ class UDPMessage(Protocol):
 
     def __init__(self, source_port=0, destination_port=0, checksum=0,
                  payload=''):
+        # Call the superclass constructor
+        super(UDPMessage, self).__init__(payload=payload)
+
         self.source_port = source_port
         self.destination_port = destination_port
         self.checksum = checksum
-        self.payload = payload
 
     def sanitize(self):
         '''
         Check if the current settings conform to the RFC and fix where possible
         '''
-        # TODO: everything...
+        # Check ports
+        if not isinstance(self.source_port, numbers.Integral) \
+        or self.source_port < 0 \
+        or self.source_port >= 2 ** 16:
+            raise ValueError('Invalid source port')
+
+        if not isinstance(self.destination_port, numbers.Integral) \
+        or self.destination_port < 0 \
+        or self.destination_port >= 2 ** 16:
+            raise ValueError('Invalid destination port')
+
+        # We can't calculate the checksum because we don't know enough by
+        # ourself to construct the pseudo-header
 
     def generate_pseudo_header(self, source, destination):
         # Calculate the length of the UDP layer
@@ -65,7 +80,25 @@ class UDPMessage(Protocol):
         self.checksum = old_checksum
 
         # Calculate the checksum
-        return checksum.ones_complement(pseudo_header + message)
+        my_checksum = checksum.ones_complement(pseudo_header + message)
+
+        # If the computed checksum is zero, it is transmitted as all ones (the
+        # equivalent in one's complement arithmetic).  An all zero transmitted
+        # checksum value means that the transmitter generated no checksum (for
+        # debugging or for higher level protocols that don't care).
+        if my_checksum == 0:
+            my_checksum = 0xffff
+
+        return my_checksum
+
+    def verify_checksum(self, source, destination):
+        # An all zero transmitted checksum value means that the transmitter
+        # generated no checksum (for debugging or for higher level protocols
+        # that don't care).
+        if self.checksum == 0:
+            return True
+
+        return self.checksum == self.calculate_checksum(source, destination)
 
     def get_lisp_message(self, only_data=False, only_control=False):
         # Check the UDP ports

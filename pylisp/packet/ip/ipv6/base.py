@@ -7,6 +7,7 @@ from IPy import IP
 from bitstring import ConstBitStream, BitStream, Bits
 from pylisp.packet.ip import protocol_registry
 from pylisp.packet.ip.protocol import Protocol
+import numbers
 
 
 class IPv6Packet(Protocol):
@@ -24,14 +25,16 @@ class IPv6Packet(Protocol):
         '''
         Constructor
         '''
+        # Call superclass
+        super(IPv6Packet, self).__init__(next_header=next_header,
+                                         payload=payload)
+
         # Set defaults
         self.traffic_class = traffic_class
         self.flow_label = flow_label
-        self.next_header = next_header
         self.hop_limit = hop_limit
         self.source = source
         self.destination = destination
-        self.payload = payload
 
     def is_fragmented(self):
         from pylisp.packet.ip.ipv6.fragment_header import IPv6FragmentHeader
@@ -62,7 +65,42 @@ class IPv6Packet(Protocol):
         '''
         Check if the current settings conform to the RFC and fix where possible
         '''
-        # TODO: everything...
+        # Let the parent do its stuff
+        super(IPv6Packet, self).sanitize()
+
+        # Check the version
+        if self.version != 6:
+            raise ValueError("Protocol version must be 6")
+
+        # Treat traffic class as an 8-bit unsigned integer. Future versions of
+        # this code may implement methods to treat it as DSCP+ECN
+        if not isinstance(self.traffic_class, numbers.Integral) \
+        or self.traffic_class < 0 \
+        or self.traffic_class >= 2 ** 8:
+            raise ValueError('Invalid traffic class')
+
+        # Treat flow label as a 20-bit unsigned integer. Future versions of
+        # this code may do more once the IETF figures out what a flow label
+        # means ;-)
+        if not isinstance(self.flow_label, numbers.Integral) \
+        or self.flow_label < 0 \
+        or self.flow_label >= 2 ** 20:
+            raise ValueError('Invalid flow label')
+
+        # Check that the hop-limit is correct
+        if not isinstance(self.hop_limit, numbers.Integral) \
+        or self.hop_limit < 0 \
+        or self.hop_limit >= 2 ** 8:
+            raise ValueError('Invalid hop limit')
+
+        # Check the source and destination addresses
+        if not isinstance(self.source, IP) \
+        or self.source.version() != 6:
+            raise ValueError('Source address must be IPv6')
+
+        if not isinstance(self.destination, IP) \
+        or self.destination.version() != 6:
+            raise ValueError('Source address must be IPv6')
 
     @classmethod
     def from_bytes(cls, bitstream):
