@@ -49,8 +49,6 @@ class ProtocolElement(object):
 
 
 class Protocol(ProtocolElement):
-    __metaclass__ = ABCMeta
-
     header_type = None
 
     @abstractmethod
@@ -61,3 +59,17 @@ class Protocol(ProtocolElement):
         super(Protocol, self).__init__()
         self.next_header = next_header
         self.payload = payload
+
+    @abstractmethod
+    def sanitize(self):
+        '''
+        Check and optionally fix properties
+        '''
+        # Let the parent do its stuff
+        super(Protocol, self).sanitize()
+
+        # Check if the next header is of the right type, and fix this header
+        # if we know better (i.e. the payload is a ProtocolElement so we know
+        # the header_type)
+        if isinstance(self.payload, Protocol):
+            self.next_header = self.payload.header_type

@@ -9,6 +9,7 @@ from pylisp.packet.ip import protocol_registry
 from pylisp.utils import checksum
 import math
 from pylisp.packet.ip.protocol import Protocol
+import numbers
 
 
 class IPv4Packet(Protocol):
@@ -22,10 +23,22 @@ class IPv4Packet(Protocol):
 
     def __init__(self, tos=0, identification=0, dont_fragment=False,
                  more_fragments=False, fragment_offset=0, ttl=0, protocol=0,
-                 source=None, destination=None, options='', payload=''):
+                 source=None, destination=None, options='', payload='',
+                 next_header=None):
         '''
         Constructor
         '''
+        # Call superclass
+        super(IPv4Packet, self).__init__(next_header=next_header or protocol,
+                                         payload=payload)
+
+        # Next-header and protocol can't conflict. Protocol is the official
+        # name, but next_header is used for compatibility with the other
+        # headers. They use the same name/number space anyway.
+        if next_header is not None and protocol != 0 \
+        and next_header != protocol:
+            raise ValueError("Conflicting next_header and protocol given")
+
         # Set defaults
         self.tos = tos
         self.identification = identification
@@ -33,11 +46,18 @@ class IPv4Packet(Protocol):
         self.more_fragments = more_fragments
         self.fragment_offset = fragment_offset
         self.ttl = ttl
-        self.protocol = protocol
         self.source = source
         self.destination = destination
         self.options = options
-        self.payload = payload
+
+    # Protocol is an alias for next-header
+    @property
+    def protocol(self):
+        return self.next_header
+
+    @protocol.setter
+    def protocol(self, protocol):
+        self.next_header = protocol
 
     def is_fragmented(self):
         return self.more_fragments or self.fragment_offset != 0
@@ -49,7 +69,73 @@ class IPv4Packet(Protocol):
         '''
         Check if the current settings conform to the RFC and fix where possible
         '''
-        # TODO: everything...
+        # Let the parent do its stuff
+        super(IPv4Packet, self).sanitize()
+
+        # Check the version
+        if self.version != 4:
+            raise ValueError("Protocol version must be 4")
+
+        # Treat type-of-service as an 8-bit unsigned integer. Future versions
+        # of this code may implement methods to treat it as DSCP+ECN
+        if not isinstance(self.tos, numbers.Integral) \
+        or self.tos < 0 \
+        or self.tos >= 2 ** 8:
+            raise ValueError('Invalid type of service')
+
+        # Identification: An identifying value assigned by the sender to aid in
+        # assembling the fragments of a datagram.
+        if not isinstance(self.identification, numbers.Integral) \
+        or self.identification < 0 \
+        or self.identification >= 2 ** 16:
+            raise ValueError('Invalid fragment identification')
+
+        # An internet datagram can be marked "don't fragment."  Any internet
+        # datagram so marked is not to be internet fragmented under any
+        # circumstances.  If internet datagram marked don't fragment cannot be
+        # delivered to its destination without fragmenting it, it is to be
+        # discarded instead.
+        if not isinstance(self.dont_fragment, bool):
+            raise ValueError("Don't fragment flag must be a boolean")
+
+        # The More Fragments flag bit (MF) is set if the datagram is not the
+        # last fragment.  The Fragment Offset field identifies the fragment
+        # location, relative to the beginning of the original unfragmented
+        # datagram.  Fragments are counted in units of 8 octets.  The
+        # fragmentation strategy is designed so than an unfragmented datagram
+        # has all zero fragmentation information (MF = 0, fragment offset =
+        # 0).  If an internet datagram is fragmented, its data portion must be
+        # broken on 8 octet boundaries.
+        if not isinstance(self.more_fragments, bool):
+            raise ValueError('More fragments flag must be a boolean')
+
+        # Fragment offset: This field indicates where in the datagram this
+        # fragment belongs. The fragment offset is measured in units of 8
+        # octets (64 bits).  The first fragment has offset zero.
+        if not isinstance(self.fragment_offset, numbers.Integral) \
+        or self.fragment_offset < 0 \
+        or self.fragment_offset >= 2 ** 13:
+            raise ValueError('Invalid fragment offset')
+
+        # Check for don't-fragment combined with a fragment offset
+        if self.dont_fragment and self.fragment_offset > 0:
+            raise ValueError("A packet marked don't fragment can't have "
+                             "a fragment-offset")
+
+        # Check that the TTL is correct
+        if not isinstance(self.ttl, numbers.Integral) \
+        or self.ttl < 0 \
+        or self.ttl >= 2 ** 8:
+            raise ValueError('Invalid TTL')
+
+        # Check the source and destination addresses
+        if not isinstance(self.source, IP) \
+        or self.source.version() != 4:
+            raise ValueError('Source address must be IPv4')
+
+        if not isinstance(self.destination, IP) \
+        or self.destination.version() != 4:
+            raise ValueError('Source address must be IPv4')
 
     @classmethod
     def from_bytes(cls, bitstream):

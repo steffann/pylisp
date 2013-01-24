@@ -121,8 +121,7 @@ class MapReplyRecord(object):
 
         # EID-prefix:  4 octets if an IPv4 address-family, 16 octets if an IPv6
         # address-family.
-        if not isinstance(self.eid_prefix, IP) \
-        or self.eid_prefix.version() not in (4, 6):
+        if not isinstance(self.eid_prefix, IP):
             raise ValueError('EID prefix must be IPv4 or IPv6')
 
         # Check locator records

@@ -130,8 +130,7 @@ class LocatorRecord(object):
         #       context?
         # NOTE: how does it even make sense to use multicast addresses as
         #       RLOCs?
-        if not isinstance(self.locator, IP) \
-        or self.locator.version() not in (4, 6):
+        if not isinstance(self.locator, IP):
             raise ValueError('Locator must be IPv4 or IPv6 address')
 
         if self.locator == IP('255.255.255.255'):
