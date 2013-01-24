@@ -120,7 +120,7 @@ class MapReplyMessage(ControlMessage):
             packet.records.append(record)
 
         # If the security flag is set then there should be security data left
-        # TODO: deal with it
+        # TODO: deal with security flag [LISP-Security]
         if packet.security:
             raise NotImplementedError('Handling security data is not ' +
                                       'implemented yet')
@@ -169,7 +169,7 @@ class MapReplyMessage(ControlMessage):
             bitstream += record.to_bitstream()
 
         # If the security flag is set then there should be security data here
-        # TODO: deal with it
+        # TODO: deal with security flag [LISP-Security]
         if self.security:
             raise NotImplementedError('Handling security data is not ' +
                                       'implemented yet')
