@@ -27,8 +27,10 @@ class LCAFAddress(ProtocolElement):
         """
         Return a list of addresses contained in this LCA so that verification
         functions have one access point to get to the content (if the content
-        consists of one or more addresses)
+        consists of one or more addresses). This should recursively get
+        addresses from nested LCAF addresses.
         """
+        return []
 
     @classmethod
     def from_bytes(cls, bitstream, prefix_len=None):

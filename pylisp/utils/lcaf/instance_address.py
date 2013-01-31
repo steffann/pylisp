@@ -21,6 +21,9 @@ class LCAFInstanceAddress(LCAFAddress):
         self.iid_mask_len = iid_mask_len
 
     def get_addresses(self):
+        if isinstance(self.address, LCAFAddress):
+            return self.address.get_addresses()
+
         return [self.address]
 
     def sanitize(self):

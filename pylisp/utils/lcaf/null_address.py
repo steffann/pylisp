@@ -14,9 +14,6 @@ class LCAFNullAddress(LCAFAddress):
     def __init__(self):
         super(LCAFNullAddress, self).__init__()
 
-    def get_addresses(self):
-        return []
-
     def sanitize(self):
         super(LCAFNullAddress, self).sanitize()
         # TODO: implement
