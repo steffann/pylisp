@@ -8,6 +8,7 @@ from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 import numbers
+from pylisp.utils.lcaf.base import LCAFAddress
 
 
 __all__ = ['LocatorRecord']
@@ -125,22 +126,26 @@ class LocatorRecord(object):
         # source RLOC MUST NOT be a multicast address.  The destination RLOC
         # SHOULD be a multicast address if it is being mapped from a
         # multicast destination EID.
-        #
-        # NOTE: where does source/destination RLOC usage come from in this
-        #       context?
-        # NOTE: how does it even make sense to use multicast addresses as
-        #       RLOCs?
-        if not isinstance(self.locator, IP):
-            raise ValueError('Locator must be IPv4 or IPv6 address')
 
-        if self.locator == IP('255.255.255.255'):
-            raise ValueError('Locator must not be broadcast address')
+        if isinstance(self.locator, IP):
+            addresses = [self.locator]
+        elif isinstance(self.locator, LCAFAddress):
+            addresses = self.locator.get_addresses()
+        else:
+            raise ValueError('Locator must be an (LCAF) IPv4 or IPv6 address')
 
-        if self.locator in IP('224.0.0.0/24') \
-        or self.locator in IP('ff02::/16') \
-        or self.locator in IP('ff12::/16'):
-            raise ValueError('Locator must not be link-local multicast ' +
-                             'address')
+        for address in addresses:
+            if not isinstance(address, IP):
+                raise ValueError('Locator must be an IPv4 or IPv6 address')
+
+            if address == IP('255.255.255.255'):
+                raise ValueError('Locator must not be broadcast address')
+
+            if address in IP('224.0.0.0/24') \
+            or address in IP('ff02::/16') \
+            or address in IP('ff12::/16'):
+                raise ValueError('Locator must not be link-local multicast ' +
+                                 'address')
 
     @classmethod
     def from_bytes(cls, bitstream):
