@@ -31,6 +31,9 @@ class LCAFGeoAddress(LCAFAddress):
         self.address = address
 
     def get_addresses(self):
+        if isinstance(self.address, LCAFAddress):
+            return self.address.get_addresses()
+
         return [self.address]
 
     def _get_latitude(self):

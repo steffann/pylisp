@@ -19,7 +19,14 @@ class LCAFAFIListAddress(LCAFAddress):
         self.addresses = addresses or []
 
     def get_addresses(self):
-        return self.addresses
+        addresses = []
+        for address in self.addresses:
+            if isinstance(address, LCAFAddress):
+                addresses += address.get_addresses()
+            else:
+                addresses.append(address)
+
+        return addresses
 
     def sanitize(self):
         super(LCAFAFIListAddress, self).sanitize()
