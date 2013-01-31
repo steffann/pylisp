@@ -79,7 +79,7 @@ class MapRegisterMessage(ControlMessage):
         # HMAC-SHA-1-96 [RFC2404] and support for HMAC-SHA-256-128 [RFC6234]
         # is RECOMMENDED.
         if not isinstance(self.authentication_data, bytes):
-            raise ValueError('Invalid nonce')
+            raise ValueError('Invalid authentication data')
 
         # Map-Reply Record:  When the M bit is set, this field is the size of a
         # single "Record" in the Map-Reply format.  This Map-Reply record
