@@ -58,7 +58,7 @@ class Settings(object):
         executable_dir = os.path.dirname(executable_file)
         config_dir = os.path.join(executable_dir, '..', 'etc')
 
-        paths = [os.path.join('etc', 'lispd', config_file),
+        paths = [os.path.join(os.path.sep, 'etc', 'lispd', config_file),
                  os.path.join(config_dir, 'lispd', config_file),
                  os.path.join('~', '.pylisp', 'lispd', config_file)]
 
@@ -82,6 +82,9 @@ class Settings(object):
             except IOError, e:
                 logger.debug("Could not import settings from %s: %s",
                              filename, e)
+            except:
+                logger.exception("Error in config file %s", filename)
+                raise
 
 # Common configuration
 config = Settings(only_defaults=True)
