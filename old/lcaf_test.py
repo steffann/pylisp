@@ -4,7 +4,7 @@ sys.path.insert(0, '.')
 sys.path.insert(0, '..')
 
 from pylisp.utils import lcaf
-from IPy import IP
+from pylisp.utils.IPy_clone import IP
 from pylisp.utils.afi import get_bitstream_for_afi_address, \
     read_afi_address_from_bitstream
 

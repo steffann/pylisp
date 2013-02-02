@@ -3,13 +3,13 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
-from IPy import IP
 from bitstring import ConstBitStream, BitArray, Bits
 from pylisp.packet.lisp.control import LocatorRecord
+from pylisp.utils.IPy_clone import IP
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
-import numbers
 from pylisp.utils.lcaf.instance_address import LCAFInstanceAddress
+import numbers
 
 
 __all__ = ['MapReferralRecord']

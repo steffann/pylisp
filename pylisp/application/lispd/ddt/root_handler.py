@@ -5,10 +5,9 @@ Created on 23 jan. 2013
 '''
 from pylisp.application.lispd import settings
 from pylisp.application.lispd.ddt.message_handler import DDTMessageHandler
-import logging
-from IPy import IP
-from pylisp.utils.ip_set import IPSet
+from pylisp.utils.IPy_clone import IP, IPSet
 from pylisp.utils.lcaf.instance_address import LCAFInstanceAddress
+import logging
 
 
 # Get the logger

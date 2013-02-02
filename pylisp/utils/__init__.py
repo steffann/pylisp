@@ -1,4 +1,4 @@
-from IPy import IP
+from pylisp.utils.IPy_clone import IP
 
 
 def make_prefix(address, prefix_len):

@@ -3,12 +3,12 @@ Created on 9 jan. 2013
 
 @author: sander
 '''
-from IPy import IP
 from bitstring import ConstBitStream, BitStream, Bits
 from pylisp.packet.ip import protocol_registry
-from pylisp.utils import checksum
-import math
 from pylisp.packet.ip.protocol import Protocol
+from pylisp.utils import checksum
+from pylisp.utils.IPy_clone import IP
+import math
 import numbers
 
 
