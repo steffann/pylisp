@@ -29,6 +29,9 @@ class MapReplyMessage(ControlMessage):
         self.nonce = nonce
         self.records = records or []
 
+        # Store space for reserved bits
+        self._reserved1 = BitArray(17)
+
     def sanitize(self):
         '''
         Check if the current settings conform to the LISP specifications and
@@ -106,7 +109,7 @@ class MapReplyMessage(ControlMessage):
          packet.security) = bitstream.readlist('3*bool')
 
         # Skip reserved bits
-        bitstream.read(17)
+        packet._reserved1 = bitstream.read(17)
 
         # Store the record count until we need it
         record_count = bitstream.read('uint:8')
@@ -151,7 +154,7 @@ class MapReplyMessage(ControlMessage):
                                  self.security))
 
         # Add padding
-        bitstream += BitArray(17)
+        bitstream += self._reserved1
 
         # Add record count
         bitstream += BitArray('uint:8=%d' % len(self.records))

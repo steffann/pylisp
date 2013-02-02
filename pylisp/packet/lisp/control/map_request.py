@@ -40,6 +40,9 @@ class MapRequestMessage(ControlMessage):
         self.eid_prefixes = eid_prefixes or []
         self.map_reply = map_reply
 
+        # Store space for reserved bits
+        self._reserved1 = BitArray(9)
+
     def sanitize(self):
         '''
         Check if the current settings conform to the LISP specifications and
@@ -232,7 +235,7 @@ class MapRequestMessage(ControlMessage):
          packet.smr_invoked) = bitstream.readlist('6*bool')
 
         # Skip over reserved bits
-        bitstream.read(9)
+        packet._reserved1 = bitstream.read(9)
 
         # Save the IRC until we reach the actual data
         irc = bitstream.read('uint:5')
@@ -304,7 +307,7 @@ class MapRequestMessage(ControlMessage):
                                                     self.smr_invoked))
 
         # Add padding
-        bitstream += BitArray(9)
+        bitstream += self._reserved1
 
         # Add IRC
         bitstream += BitArray('uint:5=%d' % (len(self.itr_rlocs) - 1))

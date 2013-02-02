@@ -49,6 +49,9 @@ class MapReplyRecord(object):
         self.eid_prefix = eid_prefix
         self.locator_records = locator_records or []
 
+        # Store space for reserved bits
+        self._reserved1 = BitArray(12 + 4)
+
     def __repr__(self):
         # This works as long as we accept all properties as paramters in the
         # constructor
@@ -160,8 +163,8 @@ class MapReplyRecord(object):
         # Read the flag
         record.authoritative = bitstream.read('bool')
 
-        # Skip over reserved bits
-        bitstream.read(12 + 4)
+        # Read reserved bits
+        record._reserved1 = bitstream.read(12 + 4)
 
         # Read the map version
         record.map_version = bitstream.read('uint:12')
@@ -209,7 +212,7 @@ class MapReplyRecord(object):
         bitstream += BitArray('bool=%d' % self.authoritative)
 
         # Add reserved bits
-        bitstream += BitArray(12 + 4)
+        bitstream += self._reserved1
 
         # Add the map version
         bitstream += BitArray('uint:12=%d' % self.map_version)
