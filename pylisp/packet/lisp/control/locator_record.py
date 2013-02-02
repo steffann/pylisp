@@ -31,6 +31,9 @@ class LocatorRecord(object):
         self.reachable = reachable
         self.locator = locator
 
+        # Store space for reserved bits
+        self._reserved1 = BitArray(13)
+
     def __repr__(self):
         # This works as long as we accept all properties as paramters in the
         # constructor
@@ -165,8 +168,8 @@ class LocatorRecord(object):
         (record.priority, record.weight, record.m_priority,
          record.m_weight) = bitstream.readlist('4*uint:8')
 
-        # Skip over unused flags
-        bitstream.read(13)
+        # Read over unused flags
+        record._reserved1 = bitstream.read(13)
 
         # Read the flags
         (record.local,
@@ -202,7 +205,7 @@ class LocatorRecord(object):
                                             self.m_weight))
 
         # Add padding
-        bitstream += BitArray(13)
+        bitstream += self._reserved1
 
         # Add the flags
         bitstream += BitArray('bool=%d, bool=%d, bool=%d'

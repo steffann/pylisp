@@ -27,6 +27,9 @@ class EncapsulatedControlMessage(ControlMessage):
         self.ddt_originated = ddt_originated
         self.payload = payload
 
+        # Store space for reserved bits
+        self._reserved1 = BitArray(26)
+
     def sanitize(self):
         '''
         Check if the current settings conform to the LISP specifications and
@@ -119,8 +122,8 @@ class EncapsulatedControlMessage(ControlMessage):
         (packet.security,
          packet.ddt_originated) = bitstream.readlist('2*bool')
 
-        # Skip reserved bits
-        bitstream.read(26)
+        # Read reserved bits
+        packet._reserved1 = bitstream.read(26)
 
         # If the security flag is set then there should be security data here
         # TODO: deal with security flag [LISP-Security]
@@ -165,7 +168,7 @@ class EncapsulatedControlMessage(ControlMessage):
                                                     self.ddt_originated))
 
         # Add padding
-        bitstream += BitArray(26)
+        bitstream += self._reserved1
 
         # Determine payload
         payload = self.payload

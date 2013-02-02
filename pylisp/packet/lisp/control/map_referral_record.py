@@ -70,6 +70,9 @@ class MapReferralRecord(object):
         self.locator_records = locator_records or []
         self.signatures = signatures or []
 
+        # Store space for reserved bits
+        self._reserved1 = BitArray(11)
+
     def __repr__(self):
         # This works as long as we accept all properties as paramters in the
         # constructor
@@ -296,8 +299,8 @@ class MapReferralRecord(object):
         (record.authoritative,
          record.incomplete) = bitstream.readlist('2*bool')
 
-        # Skip over reserved bits
-        bitstream.read(11)
+        # Read reserved bits
+        record._reserved1 = bitstream.read(11)
 
         # Read the signature count
         sig_count = bitstream.read('uint:4')
@@ -353,7 +356,7 @@ class MapReferralRecord(object):
                                                     self.incomplete))
 
         # Add reserved bits
-        bitstream += BitArray(11)
+        bitstream += self._reserved1
 
         # Add sigcount
         bitstream += BitArray('uint:4=%d' % len(self.signatures))

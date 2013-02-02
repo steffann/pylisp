@@ -25,6 +25,9 @@ class MapReferralMessage(ControlMessage):
         self.nonce = nonce
         self.records = records or []
 
+        # Store space for reserved bits
+        self._reserved1 = BitArray(20)
+
     def sanitize(self):
         '''
         Check if the current settings conform to the LISP specifications and
@@ -79,7 +82,7 @@ class MapReferralMessage(ControlMessage):
             raise ValueError(msg.format(class_name))
 
         # Skip reserved bits
-        bitstream.read(20)
+        packet._reserved1 = bitstream.read(20)
 
         # Store the record count
         record_count = bitstream.read('uint:8')
@@ -112,7 +115,7 @@ class MapReferralMessage(ControlMessage):
         bitstream = BitArray('uint:4=%d' % self.message_type)
 
         # Add padding
-        bitstream += BitArray(20)
+        bitstream += self._reserved1
 
         # Add the record count
         bitstream += BitArray('uint:8=%d' % len(self.records))
