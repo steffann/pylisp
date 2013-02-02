@@ -5,10 +5,11 @@ Created on 6 jan. 2013
 '''
 from base import ControlMessage
 from bitstring import ConstBitStream, BitArray, Bits
-from pylisp.packet.lisp.control import type_registry, KEY_ID_HMAC_SHA_1_96, \
-    KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE, MapReplyRecord
+from pylisp.packet.lisp.control import type_registry, MapRegisterRecord, \
+    KEY_ID_HMAC_SHA_1_96, KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE
 import hashlib
 import hmac
+import numbers
 
 
 __all__ = ['MapRegisterMessage']
@@ -18,9 +19,10 @@ class MapRegisterMessage(ControlMessage):
     # Class property: which message type do we represent?
     message_type = 3
 
-    def __init__(self, proxy_map_reply=False, want_map_notify=False,
+    def __init__(self, proxy_map_reply=False, for_rtr=False,
+                 want_map_notify=False,
                  nonce='\x00\x00\x00\x00\x00\x00\x00\x00', key_id=0,
-                 authentication_data='', records=None):
+                 authentication_data='', records=None, xtr_id=0, site_id=0):
         '''
         Constructor
         '''
@@ -28,11 +30,18 @@ class MapRegisterMessage(ControlMessage):
 
         # Set defaults
         self.proxy_map_reply = proxy_map_reply
+        self.for_rtr = for_rtr
         self.want_map_notify = want_map_notify
         self.nonce = nonce
         self.key_id = key_id
         self.authentication_data = authentication_data
         self.records = records or []
+        self.xtr_id = xtr_id
+        self.site_id = site_id
+
+        # Store space for reserved bits
+        self._reserved1 = BitArray(1)
+        self._reserved2 = BitArray(15)
 
     def sanitize(self):
         '''
@@ -47,6 +56,56 @@ class MapRegisterMessage(ControlMessage):
         # of the ETR.  Details on this usage can be found in [LISP-MS].
         if not isinstance(self.proxy_map_reply, bool):
             raise ValueError('Proxy Map Reply flag must be a boolean')
+
+        # The third bit after the Type field in the Map-Register message is
+        # allocated as "I" bit.  I bit indicates that a 128 bit xTR-ID and a 64
+        # bit site-ID field is present at the end of the Map-Register message.
+        # If an xTR is configured with an xTR-ID or site-ID, it MUST set the I
+        # bit to 1 and include its xTR-ID and site-ID in the Map-Register
+        # messages it generates, if either the xTR-ID or site-ID is not
+        # configured an unspecified value is encoded for the ID not configured.
+        # If the R bit in the Map-Register is set to 1, the I bit must also be
+        # set to 1, and an xTR-ID must be included in the Map-Register message
+        # sent to an RTR.
+        #
+        # xTR-ID is a 128 bit field at the end of the Map-Register message,
+        # starting after the final Record in the message.  The xTR-ID is used
+        # to identify the intended recipient xTR for a Map-Notify message,
+        # especially in the case where a site has more than one xTR.  A value
+        # of all zeros indicate that an xTR-ID is not specified, though encoded
+        # in the message.  This is useful in the case where a site-ID is
+        # specified, but no xTR-ID is configured.  When a Map-Server receives a
+        # Map-Register with an xTR-ID specified (I bit set and xTR-ID has a
+        # non-zero value), it MUST copy the XTR-ID from the Map-Register to the
+        # associated Map-Notify message.  When a Map-Server is sending an
+        # unsolicited Map-Notify to an xTR to notify the xTR of a change in
+        # locators, the Map-Server must include the xTR-ID for the intended
+        # recipient xTR, if it has one stored locally.
+        if not isinstance(self.xtr_id, numbers.Integral) \
+        or self.xtr_id < 0 or self.xtr_id >= 2 ** 128:
+            raise ValueError('Invalid xTR-ID')
+
+        # site-ID is a 64 bit field at the end of the Map-Register message,
+        # following the xTR-ID.  The site-ID is used by the Map-Server
+        # receiving the Map-Register message to identify which xTRs belong to
+        # the same site.  A value of 0 indicate that a site-ID is not
+        # specified, though encoded in the message.  When a Map-Server receives
+        # a Map-Regeter with a site-ID specified (I bit set and site-ID has
+        # non-zero value), it must copy the site-ID from the Map-Register to
+        # the associated Map-Notify message.  When a Map-Server is sending an
+        # unsolicited Map-Notify to an xTR to notify the xTR of a change in
+        # locators, the Map-Server must include the site-ID for the intended
+        # recipient xTR, if it has one stored locally.
+        if not isinstance(self.site_id, numbers.Integral) \
+        or self.site_id < 0 or self.site_id >= 2 ** 64:
+            raise ValueError('Invalid site-ID')
+
+        # The fourth bit after the Type field in the Map-Register message is
+        # allocated as "R" bit.  R bit indicates that the Map-Register is built
+        # for an RTR.  R bit must be set in a Map-Register that a LISP device
+        # sends to an RTR.
+        if not isinstance(self.for_rtr, bool):
+            raise ValueError('For-RTR flag must be a boolean')
 
         # M: This is the want-map-notify bit, when set to 1 an ETR is
         # requesting for a Map-Notify message to be returned in response to
@@ -87,7 +146,7 @@ class MapRegisterMessage(ControlMessage):
         # EID.  This allows the ETR which will receive this Map-Request to
         # cache the data if it chooses to do so.
         for record in self.records:
-            if not isinstance(record, MapReplyRecord):
+            if not isinstance(record, MapRegisterRecord):
                 raise ValueError('Invalid record')
 
             record.sanitize()
@@ -167,7 +226,14 @@ class MapRegisterMessage(ControlMessage):
         packet.proxy_map_reply = bitstream.read('bool')
 
         # Skip reserved bits
-        bitstream.read(18)
+        packet._reserved1 = bitstream.read(1)
+
+        # NATT bits
+        has_xtr_site_id = bitstream.read('bool')
+        packet.for_rtr = bitstream.read('bool')
+
+        # Skip reserved bits
+        packet._reserved2 = bitstream.read(15)
 
         # Read the rest of the flags
         packet.want_map_notify = bitstream.read('bool')
@@ -187,8 +253,13 @@ class MapRegisterMessage(ControlMessage):
 
         # Read the records
         for dummy in range(record_count):
-            record = MapReplyRecord.from_bytes(bitstream)
+            record = MapRegisterRecord.from_bytes(bitstream)
             packet.records.append(record)
+
+        # Read the xtr-id and site-id
+        if has_xtr_site_id:
+            packet.xtr_id = bitstream.read('uint:128')
+            packet.site_id = bitstream.read('uint:64')
 
         # There should be no remaining bits
         if bitstream.pos != bitstream.len:
@@ -212,8 +283,16 @@ class MapRegisterMessage(ControlMessage):
         # Add the flags
         bitstream += BitArray('bool=%d' % self.proxy_map_reply)
 
-        # Add padding
-        bitstream += BitArray(18)
+        # Add reserved bits
+        bitstream += self._reserved1
+
+        # Decide on the has_xtr_site_id value
+        has_xtr_site_id = bool(self.xtr_id or self.site_id or self.for_rtr)
+        bitstream += BitArray('bool=%d, bool=%d' % (has_xtr_site_id,
+                                                    self.for_rtr))
+
+        # Add reserved bits
+        bitstream += self._reserved2
 
         # Add the rest of the flags
         bitstream += BitArray('bool=%d' % self.want_map_notify)
@@ -233,6 +312,11 @@ class MapRegisterMessage(ControlMessage):
         # Add the map-reply records
         for record in self.records:
             bitstream += record.to_bitstream()
+
+        # Add xTR-ID and site-ID if we said we would
+        if has_xtr_site_id:
+            bitstream += BitArray('uint:128=%d, uint:64=%d' % (self.xtr_id,
+                                                               self.site_id))
 
         return bitstream.bytes
 

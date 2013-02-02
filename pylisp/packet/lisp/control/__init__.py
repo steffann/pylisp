@@ -13,6 +13,7 @@ from constants import *
 from locator_record import LocatorRecord
 from map_referral_record import MapReferralRecord
 from map_reply_record import MapReplyRecord
+from map_register_record import MapRegisterRecord
 
 # Packets
 # =======
