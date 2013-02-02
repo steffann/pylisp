@@ -3,9 +3,9 @@ Created on 6 jan. 2013
 
 @author: sander
 '''
-from IPy import IP
 from bitstring import BitArray, ConstBitStream, Bits
 from pylisp.utils import make_prefix
+from pylisp.utils.IPy_clone import IP
 
 
 def read_afi_address_from_bitstream(bitstream, prefix_len=None):

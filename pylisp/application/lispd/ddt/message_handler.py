@@ -3,11 +3,11 @@ Created on 19 jan. 2013
 
 @author: sander
 '''
-from IPy import IP
 from abc import ABCMeta, abstractmethod
 from pylisp.application.lispd.message_handler import MessageHandler
 from pylisp.packet.lisp.control import LocatorRecord, MapReferralMessage, \
     MapReferralRecord
+from pylisp.utils.IPy_clone import IP
 from pylisp.utils.lcaf.instance_address import LCAFInstanceAddress
 import logging
 

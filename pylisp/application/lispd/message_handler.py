@@ -4,10 +4,10 @@ Created on 15 jan. 2013
 @author: sander
 '''
 
-from IPy import IP
 from pylisp.packet.lisp.control import EncapsulatedControlMessage, \
     MapRequestMessage, MapNotifyMessage, MapReplyMessage, MapReferralMessage, \
     MapRegisterMessage
+from pylisp.utils.IPy_clone import IP
 import logging
 import socket
 

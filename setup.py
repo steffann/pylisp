@@ -39,5 +39,4 @@ setup(name='pylisp',
       scripts=glob.glob('scripts/*'),
 
       setup_requires=["setuptools_git >= 0.3"],
-      install_requires=['IPy',
-                        'bitstring'])
+      install_requires=['bitstring'])

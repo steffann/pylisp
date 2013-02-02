@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from IPy import IP
-from unittests.utils import PacketTest, PacketTestCreator
 
 # Add the parent directory to the start of the path
 if __name__ == '__main__':
@@ -9,6 +7,8 @@ if __name__ == '__main__':
     sys.path.insert(0, '..')
 
 from pylisp.packet.lisp.control import map_request
+from pylisp.utils.IPy_clone import IP
+from unittests.utils import PacketTest, PacketTestCreator
 import doctest
 import unittest
 

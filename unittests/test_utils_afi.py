@@ -6,9 +6,9 @@ if __name__ == '__main__':
     sys.path.insert(0, '.')
     sys.path.insert(0, '..')
 
-from IPy import IP
 from bitstring import ConstBitStream
 from pylisp.utils import afi
+from pylisp.utils.IPy_clone import IP
 import doctest
 import unittest
 
