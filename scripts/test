@@ -4,70 +4,18 @@ Created on 11 jan. 2013
 
 @author: sander
 '''
+from pylisp.packet.lisp.control.map_register import MapRegisterMessage
 
-from IPy import IP
-from pylisp.packet.ip import IPv4Packet, IPv6Packet, UDPMessage
-from pylisp.packet.lisp.control import LISPEncapsulatedControlMessage, \
-    LISPMapRequestMessage, LISPControlMessage
-import random
-import socket
-import sys
+mr_hex = '32000103231160949b9d0f19000100144f7d688298392e6baed4ac0dd38419aedb715792000005a0031e100000000001254d39383264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b000000000000000001000005a0031a100000000001254d38403264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b000000000000000001000005a0031f100000000001254d38203264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b0000000000000000015d611bb0e7a5daa92328a824c059a66a0000000000000000'
+mr_hex = '32000102e4436f2d3ff8c89600010014f9cb9f835523cbf71536240a8d0edd989e8a6430000005a003301000000000022a0086400001000000000000000000003264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b000000000000000001000005a003301000000000022a0086401009000000000000000000003264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b0000000000000000015d611bb0e7a5daa92328a824c059a66a0000000000000000'
 
-my_name = socket.getfqdn()
-query = IP(sys.argv[1])
-query_source = IP('::', query.version())
-source_port = random.choice(range(30000, 40000))
+lispd = '32000103231160949b9d0f19000100144f7d688298392e6baed4ac0dd38419aedb715792000005a0031e100000000001254d39383264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b000000000000000001000005a0031a100000000001254d38403264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b000000000000000001000005a0031f100000000001254d38203264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b0000000000000000015d611bb0e7a5daa92328a824c059a66a0000000000000000'
+tshrk = '32000503231160949b9d0f19000100144f7d688298392e6baed4ac0dd38419aedb715792000005a0031e100000000001254d39383264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b000000000000000001000005a0031a100000000001254d38403264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b000000000000000001000005a0031f100000000001254d38203264ff000005000157c3c44d0a64ff00000500015f61535d3264ff0000050002200109e085000b0000000000000000015d611bb0e7a5daa92328a824c059a66a0000000000000000'
+mr_hex = tshrk
 
-# Build the map request
-nonce = ''.join([chr(random.choice(xrange(256))) for i in range(8)])
-
-d_addrs = socket.getaddrinfo('37.77.56.75', 4342, 0, 0, socket.SOL_UDP)
-# d_addrs = socket.getaddrinfo('mr.lispnet.net', 4342, 0, 0, socket.SOL_UDP)
-for d_family, d_socktype, d_proto, d_canonname, d_sockaddr in d_addrs:
-    destination = IP(d_sockaddr[0])
-    print 'Try %s' % destination
-
-    s_addrs = socket.getaddrinfo(my_name, source_port, d_family, d_socktype, d_proto)
-    for s_family, s_socktype, s_proto, s_canonname, s_sockaddr in s_addrs:
-        source = IP(s_sockaddr[0])
-        print '- From %s' % source
-
-        # Build packet
-        req = LISPMapRequestMessage(nonce=nonce,
-                                    source_eid=query_source,
-                                    itr_rlocs=[source],
-                                    eid_prefixes=[query])
-        udp = UDPMessage(source_port=source_port,
-                         destination_port=4342,
-                         payload=req)
-        udp.checksum = udp.calculate_checksum(source=query_source,
-                                              destination=query)
-        if query.version() == 4:
-            ecm_content = IPv4Packet(ttl=64,
-                                     protocol=udp.header_type,
-                                     source=query_source,
-                                     destination=query,
-                                     payload=udp)
-        elif query.version() == 6:
-            ecm_content = IPv6Packet(next_header=17,
-                                     hop_limit=64,
-                                     source=query_source,
-                                     destination=query,
-                                     payload=udp)
-
-        ecm = LISPEncapsulatedControlMessage(payload=ecm_content)
-
-        try:
-            sock = socket.socket(d_family, d_socktype, d_proto)
-            sock.bind(s_sockaddr)
-            sock.sendto(bytes(ecm), d_sockaddr)
-            sock.settimeout(1.0)
-            data = sock.recv(4096)
-            response = LISPControlMessage.from_bytes(data)
-            print repr(response)
-            print response.nonce == nonce
-        except socket.error:
-            continue
-
-        # Print result
-        print
+mr_bytes = mr_hex.decode('hex')
+mr = MapRegisterMessage.from_bytes(mr_bytes)
+assert isinstance(mr, MapRegisterMessage)
+print mr_bytes == bytes(mr)
+print mr.verify_authentication_data('BlaBla')
+print mr.verify_authentication_data('SomeStrangePassword123')
