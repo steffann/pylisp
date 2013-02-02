@@ -7,8 +7,8 @@ Created on 11 jan. 2013
 
 from IPy import IP
 from pylisp.packet.ip import IPv4Packet, IPv6Packet, UDPMessage
-from pylisp.packet.lisp.control import LISPEncapsulatedControlMessage, \
-    LISPMapRequestMessage, LISPControlMessage
+from pylisp.packet.lisp.control import EncapsulatedControlMessage, \
+    MapRequestMessage, ControlMessage
 import random
 import socket
 import sys
@@ -32,10 +32,10 @@ for d_family, d_socktype, d_proto, d_canonname, d_sockaddr in d_addrs:
         print '- From %s' % source
 
         # Build packet
-        req = LISPMapRequestMessage(nonce=nonce,
-                                    source_eid=query_source,
-                                    itr_rlocs=[source],
-                                    eid_prefixes=query)
+        req = MapRequestMessage(nonce=nonce,
+                                source_eid=query_source,
+                                itr_rlocs=[source],
+                                eid_prefixes=query)
         udp = UDPMessage(source_port=source_port,
                          destination_port=4342,
                          payload=req)
@@ -54,14 +54,14 @@ for d_family, d_socktype, d_proto, d_canonname, d_sockaddr in d_addrs:
                                      destination=query,
                                      payload=udp)
 
-        ecm = LISPEncapsulatedControlMessage(payload=ecm_content)
+        ecm = EncapsulatedControlMessage(payload=ecm_content)
 
         try:
             sock = socket.socket(d_family, d_socktype, d_proto)
             sock.bind(s_sockaddr)
             sock.sendto(bytes(ecm), d_sockaddr)
             data = sock.recv(4096)
-            response = LISPControlMessage.from_bytes(data)
+            response = ControlMessage.from_bytes(data)
             print repr(response)
             print response.nonce == nonce
         except socket.error:
