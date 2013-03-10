@@ -8,6 +8,7 @@ from pylisp.utils.IPy_clone import IP
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 from pylisp.utils.lcaf.base import LCAFAddress
+from pylisp.utils.represent import represent
 import numbers
 
 
@@ -35,11 +36,7 @@ class LocatorRecord(object):
         self._reserved1 = BitArray(13)
 
     def __repr__(self):
-        # This works as long as we accept all properties as paramters in the
-        # constructor
-        params = ['%s=%r' % (k, v) for k, v in self.__dict__.iteritems()]
-        return '%s(%s)' % (self.__class__.__name__,
-                           ', '.join(params))
+        return represent(self.__class__.__name__, self.__dict__)
 
     def sanitize(self):
         '''
