@@ -1,16 +1,15 @@
 #!/usr/bin/env python
+from bitstring import ConstBitStream
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from pylisp.utils import afi
+import doctest
+import unittest
 
 # Add the parent directory to the start of the path
 if __name__ == '__main__':
     import sys
     sys.path.insert(0, '.')
     sys.path.insert(0, '..')
-
-from bitstring import ConstBitStream
-from pylisp.utils import afi
-from pylisp.utils.IPy_clone import IP
-import doctest
-import unittest
 
 
 def load_tests(loader, tests, ignore):
@@ -78,7 +77,7 @@ class AfiTestCase(unittest.TestCase):
 
         address = afi.read_afi_address_from_bitstream(bitstream)
 
-        self.assertEqual(address, IP('192.0.2.171'))
+        self.assertEqual(address, IPv4Address(u'192.0.2.171'))
         self.assertEqual(bitstream.pos, bitstream.len,
                          'unprocessed bits remaining in bitstream')
 
@@ -95,7 +94,7 @@ class AfiTestCase(unittest.TestCase):
 
         address = afi.read_afi_address_from_bitstream(bitstream, 24)
 
-        self.assertEqual(address, IP('192.0.2.0/24'))
+        self.assertEqual(address, IPv4Network(u'192.0.2.0/24'))
         self.assertEqual(bitstream.pos, bitstream.len,
                          'unprocessed bits remaining in bitstream')
 
@@ -125,7 +124,7 @@ class AfiTestCase(unittest.TestCase):
 
         address = afi.read_afi_address_from_bitstream(bitstream)
 
-        self.assertEqual(address, IP('2001:db8:102:abcd::cafe'))
+        self.assertEqual(address, IPv6Address(u'2001:db8:102:abcd::cafe'))
         self.assertEqual(bitstream.pos, bitstream.len,
                          'unprocessed bits remaining in bitstream')
 
@@ -142,7 +141,7 @@ class AfiTestCase(unittest.TestCase):
 
         address = afi.read_afi_address_from_bitstream(bitstream, 64)
 
-        self.assertEqual(address, IP('2001:db8:102:abcd::/64'))
+        self.assertEqual(address, IPv6Network(u'2001:db8:102:abcd::/64'))
         self.assertEqual(bitstream.pos, bitstream.len,
                          'unprocessed bits remaining in bitstream')
 

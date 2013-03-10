@@ -4,7 +4,7 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray, Bits
-from pylisp.utils.IPy_clone import IP
+from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 from pylisp.utils.lcaf.base import LCAFAddress
@@ -127,7 +127,7 @@ class LocatorRecord(object):
         # SHOULD be a multicast address if it is being mapped from a
         # multicast destination EID.
 
-        if isinstance(self.locator, IP):
+        if isinstance(self.locator, (IPv4Address, IPv6Address)):
             addresses = [self.locator]
         elif isinstance(self.locator, LCAFAddress):
             addresses = self.locator.get_addresses()
@@ -135,17 +135,23 @@ class LocatorRecord(object):
             raise ValueError('Locator must be an (LCAF) IPv4 or IPv6 address')
 
         for address in addresses:
-            if not isinstance(address, IP):
+            if isinstance(self.locator, IPv4Address):
+                if address == IPv4Address(u'255.255.255.255'):
+                    raise ValueError('Locator must not be the broadcast '
+                                     'address')
+
+                if address in IPv4Network(u'224.0.0.0/24'):
+                    raise ValueError('Locator must not be a link-local '
+                                     'multicast address')
+
+            elif isinstance(self.locator, IPv6Address):
+                if address in IPv6Network('ff02::/16') \
+                or address in IPv6Network('ff12::/16'):
+                    raise ValueError('Locator must not be a link-local '
+                                     'multicast address')
+
+            else:
                 raise ValueError('Locator must be an IPv4 or IPv6 address')
-
-            if address == IP('255.255.255.255'):
-                raise ValueError('Locator must not be broadcast address')
-
-            if address in IP('224.0.0.0/24') \
-            or address in IP('ff02::/16') \
-            or address in IP('ff12::/16'):
-                raise ValueError('Locator must not be link-local multicast ' +
-                                 'address')
 
     @classmethod
     def from_bytes(cls, bitstream):

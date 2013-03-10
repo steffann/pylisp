@@ -4,10 +4,10 @@ Created on 9 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitStream, Bits
+from ipaddress import IPv4Address
 from pylisp.packet.ip import protocol_registry
 from pylisp.packet.ip.protocol import Protocol
 from pylisp.utils import checksum
-from pylisp.utils.IPy_clone import IP
 import math
 import numbers
 
@@ -129,13 +129,11 @@ class IPv4Packet(Protocol):
             raise ValueError('Invalid TTL')
 
         # Check the source and destination addresses
-        if not isinstance(self.source, IP) \
-        or self.source.version() != 4:
+        if not isinstance(self.source, IPv4Address):
             raise ValueError('Source address must be IPv4')
 
-        if not isinstance(self.destination, IP) \
-        or self.destination.version() != 4:
-            raise ValueError('Source address must be IPv4')
+        if not isinstance(self.destination, IPv4Address):
+            raise ValueError('Destination address must be IPv4')
 
     @classmethod
     def from_bytes(cls, bitstream):
@@ -206,8 +204,8 @@ class IPv4Packet(Protocol):
             raise ValueError('Header checksum does not match')
 
         # Read the source and destination addresses
-        packet.source = IP(bitstream.read('uint:32'))
-        packet.destination = IP(bitstream.read('uint:32'))
+        packet.source = IPv4Address(bitstream.read('uint:32'))
+        packet.destination = IPv4Address(bitstream.read('uint:32'))
 
         # Read the options
         option_len = (ihl - 5) * 4
@@ -274,8 +272,8 @@ class IPv4Packet(Protocol):
 
         # Write the source and destination addresses
         bitstream += BitStream('uint:32=%d, '
-                               'uint:32=%d' % (self.source.ip,
-                                               self.destination.ip))
+                               'uint:32=%d' % (int(self.source),
+                                               int(self.destination)))
 
         # Add the options
         bitstream += BitStream(bytes=self.options)

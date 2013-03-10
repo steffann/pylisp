@@ -49,8 +49,8 @@ class UDPMessage(Protocol):
             header = BitStream('uint:32=%d, '
                                'uint:32=%d, '
                                'uint:16=17, '
-                               'uint:16=%d' % (source.ip,
-                                               destination.ip,
+                               'uint:16=%d' % (int(source),
+                                               int(destination),
                                                udp_length))
 
         elif source.version() == 6 and destination.version() == 6:
@@ -58,8 +58,8 @@ class UDPMessage(Protocol):
             header = BitStream('uint:128=%d, '
                                'uint:128=%d, '
                                'uint:32=%d, '
-                               'uint:32=17' % (source.ip,
-                                               destination.ip,
+                               'uint:32=17' % (int(source),
+                                               int(destination),
                                                udp_length))
         else:
             raise ValueError('Source and destination must belong to the same '
