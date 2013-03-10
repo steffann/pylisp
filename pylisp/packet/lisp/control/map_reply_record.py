@@ -4,8 +4,8 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray, Bits
+from ipaddress import IPv4Network, IPv6Network
 from pylisp.packet.lisp.control import LocatorRecord
-from pylisp.utils.IPy_clone import IP
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 from pylisp.utils.represent import represent
@@ -121,7 +121,7 @@ class MapReplyRecord(object):
 
         # EID-prefix:  4 octets if an IPv4 address-family, 16 octets if an IPv6
         # address-family.
-        if not isinstance(self.eid_prefix, IP):
+        if not isinstance(self.eid_prefix, (IPv4Network, IPv6Network)):
             raise ValueError('EID prefix must be IPv4 or IPv6')
 
         # Check locator records
@@ -200,7 +200,7 @@ class MapReplyRecord(object):
         bitstream += BitArray('uint:8=%d' % len(self.locator_records))
 
         # Add the EID prefix mask length
-        bitstream += BitArray('uint:8=%d' % self.eid_prefix.prefixlen())
+        bitstream += BitArray('uint:8=%d' % self.eid_prefix.prefixlen)
 
         # Add the NMR action
         bitstream += BitArray('uint:3=%d' % self.action)

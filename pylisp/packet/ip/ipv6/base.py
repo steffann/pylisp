@@ -4,9 +4,9 @@ Created on 9 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitStream, Bits
+from ipaddress import IPv6Address
 from pylisp.packet.ip import protocol_registry
 from pylisp.packet.ip.protocol import Protocol
-from pylisp.utils.IPy_clone import IP
 import numbers
 
 
@@ -94,13 +94,11 @@ class IPv6Packet(Protocol):
             raise ValueError('Invalid hop limit')
 
         # Check the source and destination addresses
-        if not isinstance(self.source, IP) \
-        or self.source.version() != 6:
+        if not isinstance(self.source, IPv6Address):
             raise ValueError('Source address must be IPv6')
 
-        if not isinstance(self.destination, IP) \
-        or self.destination.version() != 6:
-            raise ValueError('Source address must be IPv6')
+        if not isinstance(self.destination, IPv6Address):
+            raise ValueError('Destination address must be IPv6')
 
     @classmethod
     def from_bytes(cls, bitstream):
@@ -137,8 +135,8 @@ class IPv6Packet(Protocol):
         packet.hop_limit = bitstream.read('uint:8')
 
         # Read the source and destination addresses
-        packet.source = IP(bitstream.read('uint:128'))
-        packet.destination = IP(bitstream.read('uint:128'))
+        packet.source = IPv6Address(bitstream.read('uint:128'))
+        packet.destination = IPv6Address(bitstream.read('uint:128'))
 
         # And the rest is payload
         packet.payload = bitstream.read('bytes:%d' % payload_length)
@@ -185,8 +183,8 @@ class IPv6Packet(Protocol):
 
         # Write the source and destination addresses
         bitstream += BitStream('uint:128=%d, '
-                               'uint:128=%d' % (self.source.ip,
-                                                self.destination.ip))
+                               'uint:128=%d' % (int(self.source),
+                                                int(self.destination)))
 
         return bitstream.bytes + payload_bytes
 

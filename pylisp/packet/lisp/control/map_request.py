@@ -4,9 +4,9 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray, Bits
+from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from pylisp.packet.lisp.control import type_registry, ControlMessage, \
     MapReplyRecord
-from pylisp.utils.IPy_clone import IP
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 from pylisp.utils.lcaf.base import LCAFAddress
@@ -134,8 +134,7 @@ class MapRequestMessage(ControlMessage):
             if len(addresses) != 1:
                 raise ValueError('Source EID must be one address')
 
-            if not isinstance(addresses[0], IP) \
-            or addresses[0].len() != 1:
+            if not isinstance(addresses[0], (IPv4Address, IPv6Address)):
                 raise ValueError('Invalid source EID: %r' % self.source_eid)
 
         # ITR-RLOC Address:  Used to give the ETR the option of selecting the
@@ -143,8 +142,7 @@ class MapRequestMessage(ControlMessage):
         # message.  This address MUST be a routable RLOC address of the
         # sender of the Map-Request message.
         for itr_rloc in self.itr_rlocs:
-            if not isinstance(itr_rloc, IP) \
-            or itr_rloc.len() != 1:
+            if not isinstance(itr_rloc, (IPv4Address, IPv6Address)):
                 raise ValueError('Invalid ITR RLOC')
 
         # EID-prefix:  4 octets if an IPv4 address-family, 16 octets if an IPv6
@@ -165,7 +163,7 @@ class MapRequestMessage(ControlMessage):
                 addresses = [eid_prefix]
 
             for address in addresses:
-                if not isinstance(address, IP):
+                if not isinstance(address, (IPv4Network, IPv6Network)):
                     raise ValueError('Invalid EID prefix: %r', address)
 
         # Map-Reply Record:  When the M bit is set, this field is the size of a
@@ -203,11 +201,11 @@ class MapRequestMessage(ControlMessage):
         >>> message.nonce
         '\xae\x92\xb5WO\x84\x9c\xd0'
         >>> message.source_eid
-        IP('172.16.31.3')
+        IPv4Address(u'172.16.31.3')
         >>> message.itr_rlocs
-        [IP('92.254.28.189')]
+        [IPv4Address(u'92.254.28.189')]
         >>> message.eid_prefixes
-        [IP('172.16.31.1')]
+        [IPv4Network(u'172.16.31.1/32')]
         >>> message.map_reply
         '''
         packet = cls()
@@ -283,8 +281,8 @@ class MapRequestMessage(ControlMessage):
         r'''
         Create bytes from properties
 
-        >>> message = MapRequestMessage(itr_rlocs=[IP('192.0.2.1')],
-        ...                                 eid_prefixes=[IP('2001:db8::/32')])
+        >>> message = MapRequestMessage(itr_rlocs=[IPv4Address(u'192.0.2.1')],
+        ...                                 eid_prefixes=[IPv6Network(u'2001:db8::/32')])
         >>> hex = message.to_bytes().encode('hex')
         >>> hex[:40]
         '10000001000000000000000000000001c0000201'
@@ -329,7 +327,7 @@ class MapRequestMessage(ControlMessage):
         for eid_prefix in self.eid_prefixes:
             # Add padding and prefix length
             bitstream += BitArray('uint:8=0, '
-                                  'uint:8=%d' % eid_prefix.prefixlen())
+                                  'uint:8=%d' % eid_prefix.prefixlen)
 
             # Add the address
             bitstream += get_bitstream_for_afi_address(eid_prefix)

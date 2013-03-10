@@ -4,7 +4,7 @@ Created on 12 jan. 2013
 @author: sander
 '''
 from bitstring import BitArray
-from pylisp.utils import make_prefix
+from ipaddress import ip_network
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
     get_bitstream_for_afi_address
 from pylisp.utils.lcaf import type_registry
@@ -35,7 +35,11 @@ class LCAFAutonomousSystemAddress(LCAFAddress):
         asn = data.read('uint:32')
         address = read_afi_address_from_bitstream(data)
         if prefix_len is not None:
-            address = make_prefix(address, prefix_len)
+            orig_address = address
+            address = ip_network(address).supernet(new_prefix=prefix_len)
+            if address[0] != orig_address:
+                raise ValueError("invalid prefix length %s for %r"
+                                 % (prefix_len, address))
         lcaf = cls(asn=asn,
                    address=address)
         lcaf.sanitize()
