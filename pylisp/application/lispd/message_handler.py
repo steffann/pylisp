@@ -8,6 +8,7 @@ from pylisp.packet.lisp.control import EncapsulatedControlMessage, \
     MapRequestMessage, MapNotifyMessage, MapReplyMessage, MapReferralMessage, \
     MapRegisterMessage
 from pylisp.utils.IPy_clone import IP
+from pylisp.utils.represent import represent
 import logging
 import socket
 
@@ -18,13 +19,7 @@ logger = logging.getLogger(__name__)
 
 class MessageHandler(object):
     def __repr__(self):
-        # This works as long as we accept all properties as paramters in the
-        # constructor
-        params = ['%s=%r' % (key, value)
-                  for key, value in self.__dict__.iteritems()
-                  if not key.startswith('_')]
-        return '%s(%s)' % (self.__class__.__name__,
-                           ', '.join(params))
+        return represent(self.__class__.__name__, self.__dict__)
 
     def send_message(self, message, my_sockets, destinations, port=4342):
         # Find an appropriate destination
@@ -107,3 +102,12 @@ class MessageHandler(object):
 
     def handle_enc_map_request(self, received_message, my_sockets):
         return False
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def sanitize(self):
+        pass

@@ -6,6 +6,7 @@ Created on 23 jan. 2013
 from multiprocessing.dummy import Lock
 from pylisp.packet.lisp.control import EncapsulatedControlMessage, \
     ControlMessage
+from pylisp.utils.represent import represent
 import logging
 
 
@@ -53,10 +54,5 @@ class ReceivedMessage(object):
             self.inner_message = None
 
     def __repr__(self):
-        # This works as long as we accept all properties as paramters in the
-        # constructor. We remove udp_layer and inner_message from the output
-        params = ['%s=%r' % (key, value)
-                  for key, value in self.__dict__.iteritems()
-                  if key not in ('udp_layer', 'inner_message')]
-        return '%s(%s)' % (self.__class__.__name__,
-                           ', '.join(params))
+        return represent(self.__class__.__name__, self.__dict__,
+                         ('udp_layer', 'inner_message'))
