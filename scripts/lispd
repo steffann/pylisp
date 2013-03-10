@@ -91,8 +91,6 @@ def main(argv=None):
     else:
         sys.argv.extend(argv)
 
-    program_name = os.path.basename(sys.argv[0])
-
     try:
         # Setup argument parser
         parser = ArgumentParser(description=__doc__,
@@ -146,6 +144,16 @@ def main(argv=None):
         # Create the thread pool
         pool = Pool(processes=settings.config.thead_pool_size)
 
+        # Check sanity
+        logger.debug("Checking sanity of handlers")
+        for handler in settings.config.handlers:
+            handler.sanitize()
+
+        # If all ok then go
+        logger.debug("Starting handlers")
+        for handler in settings.config.handlers:
+            handler.start()
+
         logger.info("Waiting for incoming messages to process")
 
         while True:
@@ -183,6 +191,18 @@ def main(argv=None):
                 logger.error("Unexpected exception: %s" % e)
 
         logger.info("Shutting down")
+
+        # Wait for the workers
+        pool.close()
+        pool.join()
+
+        logger.info("Finished all processing, cleaning up")
+
+        # Explicitly stop handlers to allow them to stop sub-threads
+        for handler in settings.config.handlers:
+            handler.stop()
+
+        logger.info("LISPd shut down")
 
         return 0
     except KeyboardInterrupt:
