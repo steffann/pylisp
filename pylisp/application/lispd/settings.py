@@ -3,6 +3,7 @@ Created on 15 jan. 2013
 
 @author: sander
 '''
+from pylisp.utils.IPy_clone import IPSet
 import logging
 import multiprocessing.dummy as mp
 import os
@@ -28,6 +29,9 @@ class Settings(object):
         # A list of tuples containing an IP address and a port number
         self.listen_on = self.default_listen_on()
 
+        # Which prefixes are we authoritative for? None by default.
+        self.authoritative_for = IPSet([])
+
         # A list of message handlers. Each handler must be a subclass of
         # MessageHandler.
         self.handlers = []
@@ -35,7 +39,7 @@ class Settings(object):
         # Set the default number of threads
         self.thead_pool_size = None
         try:
-            self.thead_pool_size = mp.cpu_count()
+            self.thead_pool_size = mp.cpu_count() * 10
         except NotImplementedError:
             logger.warning('Can not determine the number of CPUs, you might'
                            'want to configure the thead_pool_size manually')
