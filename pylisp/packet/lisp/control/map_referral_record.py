@@ -20,33 +20,37 @@ class MapReferralRecord(object):
     # ACT: The "action" field of the mapping record in a Map-Referral
     # message encodes 6 action types.  The values for the action types are:
     #
-    # NODE-REFERRAL (0):  Sent by a DDT node with a child delegation which
-    #   is authoritative for the EID.
+    # NODE-REFERRAL (0):  indicates that the replying DDT node has
+    #   delegated an XEID-prefix that matches the requested XEID to one or
+    #   more other DDT nodes.  The Map-Referral message contains a "map-
+    #   record" with additional information, most significantly the set of
+    #   RLOCs to which the prefix has been delegated, that is used by a
+    #   DDT Map Resolver to "follow" the referral.
     #
-    # MS-REFERRAL (1):  Sent by a DDT node that has information about Map
-    #   Server(s) for the EID but it is not one of the Map Servers listed,
-    #   i.e. the DDT-Node sending the referral is not a Map Server.
+    # MS-REFERRAL (1):  indicates that the replying DDT node has delegated
+    #   an XEID-prefix that matches the requested XEID to one or more DDT
+    #   Map Servers.  It contains the same additional information as a
+    #   NODE-REFERRAL but is handled slightly differently by the receiving
+    #   DDT client.
     #
-    # MS-ACK (2):  Sent by a DDT Map Server that has one or more ETR
-    #   registered for the EID.
+    # MS-ACK (2):  indicates that a replying DDT Map Server received a DDT
+    #   Map-Request that matches an authoritative XEID-prefix for which is
+    #   has one or more registered ETRs.  This means that the request can
+    #   be forwarded to one of those ETRs to provide an answer to the
+    #   querying ITR.
     #
-    # MS-NOT-REGISTERED (3):  Sent by a DDT Map Server that is configured
-    #   for the EID-prefix but for which no ETRs are registered.
+    # MS-NOT-REGISTERED (3):  indicates that the replying DDT Map Server
+    #   received a Map-Request for one of its configured XEID-prefixes
+    #   which has no ETRs registered.
     #
-    # DELEGATION-HOLE (4):  Sent by an intermediate DDT node with
-    #   authoritative configuration covering the requested EID but without
-    #   any child delegation for the EID.  Also sent by a DDT Map Server
-    #   with authoritative configuration covering the requested EID but
-    #   for which no specific site ETR is configured.
+    # DELEGATION-HOLE (4):  indicates that the requested XEID matches a
+    #   non-delegated sub-prefix of the XEID space.  This is a non-LISP
+    #   "hole", which has not been delegated to any DDT Map Server or ETR.
     #
-    # NOT-AUTHORITATIVE (5):  Sent by a DDT node that does not have
-    #   authoritative configuration for the requested EID.  The EID-prefix
-    #   returned MUST be the original requested EID and the TTL MUST be
-    #   set to 0.  However, if such a DDT node has a child delegation
-    #   covering the requested EID, it may choose to return NODE-REFERRAL
-    #   or MS-REFERRAL as appropriate.  A DDT Map Server with site
-    #   information may choose to return of type MS-ACK or MS-NOT-
-    #   REGISTERED as appropriate.
+    # NOT-AUTHORITATIVE (5):  indicates that the replying DDT node received
+    #   a Map-Request for an XEID-request for which it is not
+    #   authoritative.  This can occur if a cached referral has become
+    #   invalid due to a change in the database hierarchy.
     #
     ACT_NODE_REFERRAL = 0
     ACT_MS_REFERRAL = 1
