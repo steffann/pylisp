@@ -4,6 +4,7 @@ Created on 11 jan. 2013
 @author: sander
 '''
 from abc import abstractmethod, ABCMeta
+from pylisp.utils.represent import represent
 
 
 class ProtocolElement(object):
@@ -16,11 +17,7 @@ class ProtocolElement(object):
         '''
 
     def __repr__(self):
-        # This works as long as we accept all properties as paramters in the
-        # constructor
-        params = ['%s=%r' % (k, v) for k, v in self.__dict__.iteritems()]
-        return '%s(%s)' % (self.__class__.__name__,
-                           ', '.join(params))
+        return represent(self.__class__.__name__, self.__dict__)
 
     def __str__(self):
         return str(self.to_bytes())
