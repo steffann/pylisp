@@ -4,7 +4,7 @@ Created on 11 mrt. 2013
 @author: sander
 '''
 from .base import AbstractNode
-from ipaddress import IPv6Address, IPv4Address, ip_address
+from ipaddress import ip_address
 
 
 class DDTReferralNode(AbstractNode):
