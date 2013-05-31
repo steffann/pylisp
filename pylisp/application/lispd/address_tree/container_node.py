@@ -35,7 +35,7 @@ class ContainerNode(AbstractNode):
             return self
 
         # Go further up the tree if possible
-        if isinstance(object, ContainerNode):
+        if isinstance(match, ContainerNode):
             return match.resolve(address)
 
         # This is as far as we go

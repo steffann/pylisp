@@ -4,7 +4,7 @@ Created on 11 mrt. 2013
 @author: sander
 '''
 from .base import AbstractNode
-from ipaddress import IPv6Address, IPv4Address
+from ipaddress import IPv6Address, IPv4Address, ip_address
 
 
 class DDTReferralNode(AbstractNode):
@@ -26,7 +26,7 @@ class DDTReferralNode(AbstractNode):
         return len(self._ddt_servers)
 
     def add(self, ddt_server):
-        assert isinstance(ddt_server, (IPv4Address, IPv6Address))
+        ddt_server = ip_address(ddt_server)
 
         # Add the new server
         self._ddt_servers.add(ddt_server)
