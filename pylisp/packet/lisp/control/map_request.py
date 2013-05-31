@@ -4,7 +4,8 @@ Created on 6 jan. 2013
 @author: sander
 '''
 from bitstring import ConstBitStream, BitArray, Bits
-from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
+from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network, \
+    ip_network
 from pylisp.packet.lisp.control import type_registry, ControlMessage, \
     MapReplyRecord
 from pylisp.utils.afi import read_afi_address_from_bitstream, \
@@ -163,8 +164,9 @@ class MapRequestMessage(ControlMessage):
                 addresses = [eid_prefix]
 
             for address in addresses:
-                if not isinstance(address, (IPv4Network, IPv6Network)):
-                    raise ValueError('Invalid EID prefix: %r', address)
+                if not isinstance(address, (IPv4Network, IPv4Address,
+                                            IPv6Network, IPv6Address)):
+                    raise ValueError('Invalid EID prefix: %r' % address)
 
         # Map-Reply Record:  When the M bit is set, this field is the size of a
         # single "Record" in the Map-Reply format.  This Map-Reply record
@@ -282,7 +284,7 @@ class MapRequestMessage(ControlMessage):
         Create bytes from properties
 
         >>> message = MapRequestMessage(itr_rlocs=[IPv4Address(u'192.0.2.1')],
-        ...                                 eid_prefixes=[IPv6Network(u'2001:db8::/32')])
+        ...                       eid_prefixes=[IPv6Network(u'2001:db8::/32')])
         >>> hex = message.to_bytes().encode('hex')
         >>> hex[:40]
         '10000001000000000000000000000001c0000201'
@@ -325,6 +327,9 @@ class MapRequestMessage(ControlMessage):
 
         # Add the EIDs
         for eid_prefix in self.eid_prefixes:
+            # Make sure it is a network
+            eid_prefix = ip_network(eid_prefix)
+
             # Add padding and prefix length
             bitstream += BitArray('uint:8=0, '
                                   'uint:8=%d' % eid_prefix.prefixlen)

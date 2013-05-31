@@ -4,9 +4,10 @@ Created on 9 jan. 2013
 @author: sander
 '''
 from bitstring import BitStream, ConstBitStream, Bits
+from ipaddress import IPv4Address, IPv6Address
+from pylisp.packet.ip import protocol_registry
 from pylisp.packet.ip.protocol import Protocol
 from pylisp.utils import checksum
-from pylisp.packet.ip import protocol_registry
 import numbers
 
 
@@ -44,7 +45,8 @@ class UDPMessage(Protocol):
         # Calculate the length of the UDP layer
         udp_length = 8 + len(bytes(self.payload))
 
-        if source.version() == 4 and destination.version() == 4:
+        if isinstance(source, IPv4Address) \
+        and isinstance(destination, IPv4Address):
             # Generate an IPv4 pseudo-header
             header = BitStream('uint:32=%d, '
                                'uint:32=%d, '
@@ -53,7 +55,8 @@ class UDPMessage(Protocol):
                                                int(destination),
                                                udp_length))
 
-        elif source.version() == 6 and destination.version() == 6:
+        elif isinstance(source, IPv6Address) \
+        and isinstance(destination, IPv6Address):
             # Generate an IPv6 pseudo-header
             header = BitStream('uint:128=%d, '
                                'uint:128=%d, '
