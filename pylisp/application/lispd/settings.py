@@ -15,6 +15,10 @@ import sys
 logger = logging.getLogger(__name__)
 
 
+class ConfigurationError(Exception):
+    pass
+
+
 class Settings(object):
     def __init__(self, only_defaults=False):
         # Someone might want to know if there is more than the defaults
@@ -56,7 +60,6 @@ class Settings(object):
             return config_file
 
         # Construct a list of full paths to look for a given configuration file
-        import sys
         executable_file = os.path.realpath(sys.argv[0])
         executable_dir = os.path.dirname(executable_file)
         config_dir = os.path.join(executable_dir, '..', 'etc')
