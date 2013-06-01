@@ -3,8 +3,13 @@ Created on 11 mrt. 2013
 
 @author: sander
 '''
-from .base import AbstractNode
 from ipaddress import ip_address
+from pylisp.application.lispd.address_tree.base import AbstractNode
+import logging
+
+
+# Get the logger
+logger = logging.getLogger(__name__)
 
 
 class DDTReferralNode(AbstractNode):

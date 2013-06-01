@@ -4,6 +4,11 @@ Created on 10 mrt. 2013
 @author: sander
 '''
 from ipaddress import ip_network
+import logging
+
+
+# Get the logger
+logger = logging.getLogger(__name__)
 
 
 class AbstractNode(object):
@@ -28,3 +33,6 @@ class AbstractNode(object):
     def prefix(self):
         # Return a copy of our prefix
         return ip_network(self._prefix)
+
+    def cleanup(self):
+        logger.debug('Cleaning up {0}'.format('%s(%r)' % (self.__class__.__name__, self._prefix)))

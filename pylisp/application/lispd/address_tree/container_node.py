@@ -3,9 +3,14 @@ Created on 11 mrt. 2013
 
 @author: sander
 '''
-from .base import AbstractNode
-from .exceptions import NotAuthoritativeError, MoreSpecificsFoundError
 from ipaddress import ip_network
+from pylisp.application.lispd.address_tree.base import AbstractNode
+from pylisp.application.lispd.address_tree.exceptions import MoreSpecificsFoundError, NotAuthoritativeError
+import logging
+
+
+# Get the logger
+logger = logging.getLogger(__name__)
 
 
 class ContainerNode(AbstractNode):
@@ -155,3 +160,8 @@ class ContainerNode(AbstractNode):
     def update(self, children):
         for child in children:
             self.add(child)
+
+    def cleanup(self):
+        super(ContainerNode, self).cleanup()
+        for child in self._children:
+            child.cleanup()
