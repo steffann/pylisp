@@ -4,10 +4,9 @@ Created on 15 jan. 2013
 @author: sander
 '''
 
-from pylisp.packet.lisp.control import EncapsulatedControlMessage, \
-    MapRequestMessage, MapNotifyMessage, MapReplyMessage, MapReferralMessage, \
-    MapRegisterMessage
-from pylisp.utils.IPy_clone import IP
+from ipaddress import IPv4Address, ip_address
+from pylisp.packet.lisp.control import (EncapsulatedControlMessage, MapRequestMessage, MapReplyMessage,
+                                        MapNotifyMessage, MapReferralMessage, MapRegisterMessage)
 from pylisp.utils.represent import represent
 import logging
 import socket
@@ -24,8 +23,8 @@ class MessageHandler(object):
     def send_message(self, message, my_sockets, destinations, port=4342):
         # Find an appropriate destination
         for destination in destinations:
-            destination = IP(destination)
-            dest_family = (destination.version() == 4
+            destination = ip_address(destination)
+            dest_family = (isinstance(destination, IPv4Address)
                            and socket.AF_INET
                            or socket.AF_INET6)
             for sock in my_sockets:
@@ -33,7 +32,7 @@ class MessageHandler(object):
                     addr = (destination.strNormal(False), port)
                     data = bytes(message)
                     logger.debug("Hander %r sent reply %r", self, message)
-                    logger.debug("Sending %d bytes to %r", len(data), addr)
+                    logger.debug("Sending %d bytes to %s", len(data), addr)
                     sent = sock.sendto(data, addr)
                     return (sent == len(data))
 
