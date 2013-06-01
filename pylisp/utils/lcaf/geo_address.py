@@ -68,6 +68,10 @@ class LCAFGeoAddress(LCAFAddress):
         super(LCAFGeoAddress, self).sanitize()
         # TODO: implement
 
+    @property
+    def prefixlen(self):
+        return self.address.prefixlen
+
     @classmethod
     def _from_data_bytes(cls, data, prefix_len=None, rsvd1=None, flags=None,
                          rsvd2=None):

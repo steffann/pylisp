@@ -80,6 +80,8 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
 
 
 def get_bitstream_for_afi_address(address):
+    from pylisp.utils.lcaf import LCAFAddress
+
     # No address is AFI 0
     if address is None:
         return BitArray(16)
@@ -98,13 +100,10 @@ def get_bitstream_for_afi_address(address):
     elif isinstance(address, IPv6Network):
         return BitArray('uint:16=2, uint:128=%d' % int(address[0]))
 
-    else:
-        raise ValueError('Unsupported IP address')
-
-    from pylisp.utils.lcaf import LCAFAddress
-    if isinstance(address, LCAFAddress):
+    elif isinstance(address, LCAFAddress):
         address_bytes = bytes(address)
         return BitArray('uint:16=16387') + BitArray(bytes=address_bytes)
 
-    # Nobody encoded it...
-    raise ValueError('Unsupported address type')
+    else:
+        # Nobody encoded it...
+        raise ValueError('Unsupported address type')

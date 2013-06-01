@@ -10,6 +10,7 @@ from pylisp.utils.lcaf.base import LCAFAddress
 
 class LCAFNullAddress(LCAFAddress):
     lcaf_type = 0
+    prefixlen = 0
 
     def __init__(self):
         super(LCAFNullAddress, self).__init__()

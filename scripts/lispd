@@ -17,6 +17,7 @@ import logging
 import select
 import socket
 import sys
+from pylisp.application.lispd.message_handler import handle_message
 
 
 logger = logging.root
@@ -39,13 +40,6 @@ def create_sockets():
         sockets.append(sock)
 
     return sockets
-
-
-def handle_message(received_message, my_sockets):
-    logger.debug("Handling message %d from %r: %r",
-                 received_message.message_nr,
-                 received_message.source,
-                 received_message.message)
 
 
 def main(argv=None):
@@ -121,9 +115,7 @@ def main(argv=None):
                     # Parse input
                     try:
                         message = ControlMessage.from_bytes(data)
-                        received_message = ReceivedMessage(message=message,
-                                                           source=addr,
-                                                           socket=sock)
+                        received_message = ReceivedMessage(message=message, source=addr, socket=sock)
                     except Exception, e:
                         logger.error("Error in message from %r: %s", addr, e)
 
@@ -131,11 +123,9 @@ def main(argv=None):
                     try:
                         kwds = {'received_message': received_message,
                                 'my_sockets': sockets}
-                        pool.apply_async(handle_message,
-                                         kwds=kwds)
+                        pool.apply_async(handle_message, kwds=kwds)
                     except Exception, e:
-                        logger.error("Uncaught exception when handling "
-                                      "message from %r: %s", addr, e)
+                        logger.error("Uncaught exception when handling message from %r: %s", addr, e)
 
             except KeyboardInterrupt:
                 logger.info("Interupted")
