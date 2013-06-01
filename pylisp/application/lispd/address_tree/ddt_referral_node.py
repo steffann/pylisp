@@ -13,44 +13,44 @@ logger = logging.getLogger(__name__)
 
 
 class DDTReferralNode(AbstractNode):
-    def __init__(self, prefix, ddt_servers=None):
+    def __init__(self, prefix, ddt_nodes=None):
         super(DDTReferralNode, self).__init__(prefix)
-        self._ddt_servers = set()
+        self._ddt_nodes = set()
 
-        if ddt_servers:
-            self.update(ddt_servers)
+        if ddt_nodes:
+            self.update(ddt_nodes)
 
     def __repr__(self):
         return '%s(%r, %r)' % (self.__class__.__name__, self._prefix,
-                               self._ddt_servers)
+                               self._ddt_nodes)
 
     def __iter__(self):
-        return iter(self._ddt_servers)
+        return iter(self._ddt_nodes)
 
     def __len__(self):
-        return len(self._ddt_servers)
+        return len(self._ddt_nodes)
 
-    def add(self, ddt_server):
-        ddt_server = ip_address(ddt_server)
+    def add(self, ddt_node):
+        ddt_node = ip_address(ddt_node)
 
-        # Add the new server
-        self._ddt_servers.add(ddt_server)
+        # Add the new node
+        self._ddt_nodes.add(ddt_node)
 
     def clear(self):
-        self._ddt_servers = set()
+        self._ddt_nodes = set()
 
-    def __contains__(self, ddt_server):
-        return ddt_server in self._ddt_servers
+    def __contains__(self, ddt_node):
+        return ddt_node in self._ddt_nodes
 
     def copy(self):
-        return self.__class__(self._prefix, self._ddt_servers)
+        return self.__class__(self._prefix, self._ddt_nodes)
 
-    def discard(self, ddt_server):
-        self._ddt_servers.discard(ddt_server)
+    def discard(self, ddt_node):
+        self._ddt_nodes.discard(ddt_node)
 
-    def remove(self, ddt_server):
-        self._ddt_servers.remove(ddt_server)
+    def remove(self, ddt_node):
+        self._ddt_nodes.remove(ddt_node)
 
-    def update(self, ddt_servers):
-        for ddt_server in ddt_servers:
-            self.add(ddt_server)
+    def update(self, ddt_nodes):
+        for ddt_node in ddt_nodes:
+            self.add(ddt_node)
