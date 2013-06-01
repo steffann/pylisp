@@ -1,0 +1,164 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+LISPd manages all LISP control packets sent and received by
+a system. By default it listens on UDP port 4342, dispatches
+incoming requests to the configurable modules and can send
+requests to other systems on behalf of other applications.
+"""
+
+from IPy import IP
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from multiprocessing.dummy import Pool
+from pylisp.application.lispd import settings
+from pylisp.application.lispd.received_message import ReceivedMessage
+from pylisp.packet.lisp.control import ControlMessage
+import logging
+import select
+import socket
+import sys
+
+
+logger = logging.root
+
+
+def create_sockets():
+    sockets = []
+    for sockaddr in settings.config.LISTEN_ON:
+        ip_address = IP(sockaddr[0])
+
+        logger.info("Binding to %s port %d" % (ip_address, sockaddr[1]))
+
+        if ip_address.version() == 4:
+            family = socket.AF_INET
+        else:
+            family = socket.AF_INET6
+
+        sock = socket.socket(family, socket.SOCK_DGRAM, socket.SOL_UDP)
+        sock.bind(sockaddr)
+        sockets.append(sock)
+
+    return sockets
+
+
+def handle_message(received_message, my_sockets):
+    logger.debug("Handling message %d from %r: %r",
+                 received_message.message_nr,
+                 received_message.source,
+                 received_message.message)
+
+
+def main(argv=None):
+    """Command line options."""
+
+    if argv is None:
+        argv = sys.argv
+    else:
+        sys.argv.extend(argv)
+
+    try:
+        # Setup argument parser
+        parser = ArgumentParser(description=__doc__,
+                                formatter_class=RawDescriptionHelpFormatter)
+        parser.add_argument("-v",
+                            "--verbose",
+                            dest="verbose",
+                            action="store_true",
+                            help="be verbose")
+        parser.add_argument("-d",
+                            "--debug",
+                            dest="debug",
+                            action="store_true",
+                            help="show debugging output")
+        parser.add_argument("-C",
+                            "--show-config",
+                            dest="show_config",
+                            action="store_true",
+                            help="show the configuration and exit")
+
+        # Process arguments
+        args = parser.parse_args()
+
+        # Configure the logging process
+        if args.debug:
+            logging_level = logging.DEBUG
+        elif args.verbose:
+            logging_level = logging.INFO
+        else:
+            logging_level = logging.WARNING
+
+        logging.basicConfig(level=logging_level,
+                            format='%(asctime)s [%(module)s %(levelname)s] %(message)s')
+
+        # Init the settings
+        settings.config = settings.Settings()
+
+        # Show config?
+        if args.show_config:
+            for setting, value in settings.config.__dict__.iteritems():
+                if setting == setting.upper():
+                    # Show the setting
+                    sys.stdout.write("%s=%r\n" % (setting, value))
+            return 2
+
+        # Determine local sockets
+        sockets = create_sockets()
+
+        # Create the thread pool
+        pool = Pool(processes=settings.config.THREAD_POOL_SIZE)
+
+        logger.info("Waiting for incoming messages to process")
+
+        while True:
+            try:
+                # Get the active sockets
+                rlist, dummy, dummy = select.select(sockets, [], [])
+
+                for sock in rlist:
+                    data, addr = sock.recvfrom(65536)
+                    logger.debug("Received %d bytes from %r", len(data), addr)
+
+                    # Parse input
+                    try:
+                        message = ControlMessage.from_bytes(data)
+                        received_message = ReceivedMessage(message=message,
+                                                           source=addr,
+                                                           socket=sock)
+                    except Exception, e:
+                        logger.error("Error in message from %r: %s", addr, e)
+
+                    # Dispatch
+                    try:
+                        kwds = {'received_message': received_message,
+                                'my_sockets': sockets}
+                        pool.apply_async(handle_message,
+                                         kwds=kwds)
+                    except Exception, e:
+                        logger.error("Uncaught exception when handling "
+                                      "message from %r: %s", addr, e)
+
+            except KeyboardInterrupt:
+                logger.info("Interupted")
+                break
+            except Exception, e:
+                logger.error("Unexpected exception: %s" % e)
+
+        logger.info("Shutting down")
+
+        # Wait for the workers
+        pool.close()
+        pool.join()
+
+        logger.info("LISPd shut down")
+
+        return 0
+    except KeyboardInterrupt:
+        ### handle keyboard interrupt ###
+        return 0
+    except Exception, e:
+        logger.exception("Unexpected exception")
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
