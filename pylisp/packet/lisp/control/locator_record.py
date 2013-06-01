@@ -145,8 +145,8 @@ class LocatorRecord(object):
                                      'multicast address')
 
             elif isinstance(self.locator, IPv6Address):
-                if address in IPv6Network('ff02::/16') \
-                or address in IPv6Network('ff12::/16'):
+                if address in IPv6Network(u'ff02::/16') \
+                or address in IPv6Network(u'ff12::/16'):
                     raise ValueError('Locator must not be a link-local '
                                      'multicast address')
 
