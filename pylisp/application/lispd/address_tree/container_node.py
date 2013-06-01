@@ -26,20 +26,23 @@ class ContainerNode(AbstractNode):
     def __len__(self):
         return len(self._children)
 
-    def resolve(self, address):
+    def resolve_path(self, address):
         '''
         Resolve the given address in this tree branch
         '''
         match = self.find_one(address)
         if not match:
-            return self
+            return [self]
 
         # Go further up the tree if possible
         if isinstance(match, ContainerNode):
-            return match.resolve(address)
+            return match.resolve_path(address) + [self]
 
         # This is as far as we go
-        return match
+        return [match, self]
+
+    def resolve(self, address):
+        return self.resolve_path(address)[0]
 
     def find_one(self, address):
         '''
