@@ -30,6 +30,9 @@ class LCAFGeoAddress(LCAFAddress):
         self.altitude = altitude
         self.address = address
 
+    def __unicode__(self):
+        return u'[{0},{1}]{2}'.format(self.longitude, self.latitude, self.address)
+
     def get_addresses(self):
         if isinstance(self.address, LCAFAddress):
             return self.address.get_addresses()

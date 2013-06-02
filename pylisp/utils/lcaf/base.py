@@ -19,6 +19,10 @@ class LCAFAddress(ProtocolElement):
         '''
 
     @abstractmethod
+    def __unicode__(self):
+        pass
+
+    @abstractmethod
     def sanitize(self):
         pass
 

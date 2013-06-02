@@ -18,6 +18,9 @@ class LCAFAFIListAddress(LCAFAddress):
         super(LCAFAFIListAddress, self).__init__()
         self.addresses = addresses or []
 
+    def __unicode__(self):
+        return u','.join(self.addresses)
+
     def get_addresses(self):
         addresses = []
         for address in self.addresses:
