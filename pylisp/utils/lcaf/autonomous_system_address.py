@@ -19,6 +19,9 @@ class LCAFAutonomousSystemAddress(LCAFAddress):
         self.asn = asn
         self.address = address
 
+    def __unicode__(self):
+        return u'[AS{0}]{1}'.format(self.asn, self.address)
+
     def get_addresses(self):
         if isinstance(self.address, LCAFAddress):
             return self.address.get_addresses()

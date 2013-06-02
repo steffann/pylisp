@@ -15,6 +15,9 @@ class LCAFNullAddress(LCAFAddress):
     def __init__(self):
         super(LCAFNullAddress, self).__init__()
 
+    def __unicode__(self):
+        return u'NULL'
+
     def sanitize(self):
         super(LCAFNullAddress, self).sanitize()
         # TODO: implement

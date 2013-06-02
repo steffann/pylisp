@@ -20,6 +20,12 @@ class LCAFInstanceAddress(LCAFAddress):
         self.address = address
         self.iid_mask_len = iid_mask_len
 
+    def __unicode__(self):
+        if self.instance_id:
+            return u'[{0}]{1}'.format(self.instance_id, self.address)
+        else:
+            return unicode(self.address)
+
     def get_addresses(self):
         if isinstance(self.address, LCAFAddress):
             return self.address.get_addresses()
