@@ -7,39 +7,64 @@ incoming requests to the configurable modules and can send
 requests to other systems on behalf of other applications.
 """
 
-from IPy import IP
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from ipaddress import ip_address, IPv4Address
 from multiprocessing.dummy import Pool
 from pylisp.application.lispd import settings
+from pylisp.application.lispd.message_handler import handle_message
 from pylisp.application.lispd.received_message import ReceivedMessage
+from pylisp.application.lispd.settings import ConfigurationError
 from pylisp.packet.lisp.control import ControlMessage
+from pylisp.utils.task_thread import TaskThread
 import logging
 import select
 import socket
 import sys
-from pylisp.application.lispd.message_handler import handle_message
 
 
 logger = logging.root
 
 
-def create_sockets():
+def create_sockets(config):
     sockets = []
-    for sockaddr in settings.config.LISTEN_ON:
-        ip_address = IP(sockaddr[0])
+    for sockaddr in config.LISTEN_ON:
+        # (re)parse the address
+        address = ip_address(sockaddr[0])
 
-        logger.info("Binding to %s port %d" % (ip_address, sockaddr[1]))
+        logger.info("Binding to %s port %d" % (address, sockaddr[1]))
 
-        if ip_address.version() == 4:
+        # Determine the address family
+        if isinstance(address, IPv4Address):
             family = socket.AF_INET
         else:
             family = socket.AF_INET6
 
+        # In case we got passed an IPv[46]Address in the sockaddr
+        plain_sockaddr = list(sockaddr)
+        plain_sockaddr[0] = str(plain_sockaddr[0])
+        plain_sockaddr = tuple(plain_sockaddr)
+
+        # Create the socket and bind to it
         sock = socket.socket(family, socket.SOCK_DGRAM, socket.SOL_UDP)
-        sock.bind(sockaddr)
+        sock.bind(plain_sockaddr)
         sockets.append(sock)
 
     return sockets
+
+
+class BackgroundProcessingTask(TaskThread):
+    def __init__(self, config, my_sockets):
+        super(BackgroundProcessingTask, self).__init__(interval=10)
+        self.config = config
+        self.my_sockets = my_sockets
+
+    def task(self):
+        logger.debug("Running background processing")
+        with self.config.lock:
+            for instance in self.config.INSTANCES:
+                for afi in self.config.INSTANCES[instance]:
+                    self.config.INSTANCES[instance][afi].process(self.my_sockets)
+        logger.debug("Finished background processing")
 
 
 def main(argv=None):
@@ -96,13 +121,16 @@ def main(argv=None):
             return 2
 
         # Determine local sockets
-        sockets = create_sockets()
+        sockets = create_sockets(settings.config)
 
         # Create the thread pool
         pool = Pool(processes=settings.config.THREAD_POOL_SIZE)
 
-        logger.info("Waiting for incoming messages to process")
+        # Create the timer for processing
+        processing_timer = BackgroundProcessingTask(settings.config, sockets)
+        processing_timer.start()
 
+        logger.info("Waiting for incoming messages to process")
         while True:
             try:
                 # Get the active sockets
@@ -136,6 +164,7 @@ def main(argv=None):
         logger.info("Shutting down")
 
         # Wait for the workers
+        processing_timer.shutdown()
         pool.close()
         pool.join()
 
@@ -145,6 +174,8 @@ def main(argv=None):
     except KeyboardInterrupt:
         ### handle keyboard interrupt ###
         return 0
+    except ConfigurationError:
+        return 1
     except Exception, e:
         logger.exception("Unexpected exception")
         return 2

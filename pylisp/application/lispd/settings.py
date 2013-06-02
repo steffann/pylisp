@@ -9,6 +9,7 @@ import multiprocessing.dummy as mp
 import os
 import socket
 import sys
+import threading
 
 
 # Get the logger
@@ -21,8 +22,16 @@ class ConfigurationError(Exception):
 
 class Settings(object):
     def __init__(self, only_defaults=False):
+        # Create a lock for this object
+        self.lock = threading.RLock()
+
         # Someone might want to know if there is more than the defaults
         self.only_defaults = only_defaults
+
+        # Empty settings
+        self.LISTEN_ON = []
+        self.INSTANCES = {}
+        self.THREAD_POOL_SIZE = None
 
         # Set the defaults
         self.set_defaults()
@@ -32,20 +41,22 @@ class Settings(object):
             self.apply_config_files()
 
     def set_defaults(self):
-        # A list of tuples containing an IP address and a port number
-        self.LISTEN_ON = self.default_listen_on()
+        # Make sure we have control over this config
+        with self.lock:
+            # A list of tuples containing an IP address and a port number
+            self.LISTEN_ON = self.default_listen_on()
 
-        # A list of instances. The key is the instance-id, the value a dict
-        # of AFI-ids pointing to ContainerNodes.
-        self.INSTANCES = {}
+            # A list of instances. The key is the instance-id, the value a dict
+            # of AFI-ids pointing to ContainerNodes.
+            self.INSTANCES = {}
 
-        # Set the default number of threads
-        self.THREAD_POOL_SIZE = None
-        try:
-            self.THREAD_POOL_SIZE = mp.cpu_count() * 10
-        except NotImplementedError:
-            logger.warning('Can not determine the number of CPUs, you might'
-                           ' want to configure the THREAD_POOL_SIZE manually')
+            # Set the default number of threads
+            self.THREAD_POOL_SIZE = None
+            try:
+                self.THREAD_POOL_SIZE = mp.cpu_count() * 10
+            except NotImplementedError:
+                logger.warning('Can not determine the number of CPUs, you might'
+                               ' want to configure the THREAD_POOL_SIZE manually')
 
     def default_listen_on(self):
         # Listen to the IP addresses that correspond with my hostname
@@ -78,29 +89,32 @@ class Settings(object):
         return self.get_config_paths('settings.py')
 
     def apply_config_files(self):
-        # Execute potential configuration files in the current context so they
-        # can manipulate it. Later files overrule previous settings.
-        for filename in self.get_potential_config_files():
-            try:
-                # Import the settings under a dummy name
-                mod = imp.load_source('DUMMY_MODULE_NAME', filename)
-                logger.info("Importing settings from {0}".format(filename))
+        # Make sure we have control over this config
+        with self.lock:
+            # Execute potential configuration files in the current context so they
+            # can manipulate it. Later files overrule previous settings.
+            for filename in self.get_potential_config_files():
+                try:
+                    # Import the settings under a dummy name
+                    mod = imp.load_source('PYLISP_USER_SETTINGS', filename)
+                    logger.info("Importing settings from {0}".format(filename))
 
-                for setting in dir(mod):
-                    if setting == setting.upper():
-                        logger.debug('Loading setting {0}'.format(setting))
-                        setting_value = getattr(mod, setting)
-                        setattr(self, setting, setting_value)
+                    for setting in dir(mod):
+                        if setting == setting.upper():
+                            logger.debug('Loading setting {0}'.format(setting))
+                            setting_value = getattr(mod, setting)
+                            setattr(self, setting, setting_value)
 
-                # Remove the dummy name from the system, otherwise the next config file might use its content
-                # accidentally. The module content unfortunately hangs around...
-                del sys.modules['DUMMY_MODULE_NAME']
+                    # Remove the dummy name from the system, otherwise the next config file might use its content
+                    # accidentally. The module content unfortunately hangs around...
+                    del sys.modules['PYLISP_USER_SETTINGS']
 
-            except (IOError, ImportError), e:
-                logger.debug("Could not import settings from {0}: {1}".format(filename, e))
-            except:
-                logger.exception("Error in config file {0}".format(filename))
-                raise
+                except IOError, e:
+                    logger.debug("Could not import settings from {0}: {1}".format(filename, e))
+                except:
+                    logger.exception("Error in config file {0}".format(filename))
+                    raise ConfigurationError("Error in config file {0}".format(filename))
+
 
 # Common configuration
 config = Settings(only_defaults=True)
