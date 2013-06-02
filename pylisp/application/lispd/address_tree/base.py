@@ -5,6 +5,7 @@ Created on 10 mrt. 2013
 '''
 from ipaddress import ip_network
 import logging
+import threading
 
 
 # Get the logger
@@ -18,21 +19,39 @@ class AbstractNode(object):
 
     def __init__(self, prefix):
         super(AbstractNode, self).__init__()
-        self._prefix = ip_network(prefix)
+        self.prefix = ip_network(prefix)
+
+        # Create a lock for this object
+        self.lock = threading.RLock()
 
     def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, self._prefix)
+        return '%s(%r)' % (self.__class__.__name__, self.prefix)
 
     def __hash__(self):
-        return hash(self._prefix)
+        return hash(self.prefix)
 
     def __nonzero__(self):
         return True
 
-    @property
-    def prefix(self):
-        # Return a copy of our prefix
-        return ip_network(self._prefix)
+    def process(self, my_sockets):
+        logger.debug('Processing {0}'.format('%s(%r)' % (self.__class__.__name__, self.prefix)))
 
-    def cleanup(self):
-        logger.debug('Cleaning up {0}'.format('%s(%r)' % (self.__class__.__name__, self._prefix)))
+
+class AddressTreeError(Exception):
+    pass
+
+
+class MapServerNotRegistered(AddressTreeError):
+    pass
+
+
+class DelegationHoleError(AddressTreeError):
+    pass
+
+
+class NotAuthoritativeError(AddressTreeError):
+    pass
+
+
+class MoreSpecificsFoundError(AddressTreeError):
+    pass

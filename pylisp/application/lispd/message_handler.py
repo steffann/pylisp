@@ -5,6 +5,7 @@ Created on 15 jan. 2013
 '''
 
 from pylisp.application.lispd.ddt_handler import handle_ddt_map_request
+from pylisp.application.lispd.etr_handler import handle_map_notify
 from pylisp.packet.lisp.control import (EncapsulatedControlMessage, MapNotifyMessage, MapReferralMessage,
     MapRegisterMessage, MapReplyMessage, MapRequestMessage)
 import logging
@@ -33,13 +34,13 @@ def handle_message(received_message, my_sockets):
             # A map-reply message
             handle_map_reply(received_message, my_sockets)
 
+        elif isinstance(received_message.message, MapNotifyMessage):
+            # A map-notify message (subclass of MapRegisterMessage, so put above it!)
+            handle_map_notify(received_message, my_sockets)
+
         elif isinstance(received_message.message, MapRegisterMessage):
             # A map-register message
             handle_map_register(received_message, my_sockets)
-
-        elif isinstance(received_message.message, MapNotifyMessage):
-            # A map-notify message
-            handle_map_notify(received_message, my_sockets)
 
         elif isinstance(received_message.message, MapReferralMessage):
             # A map-referral message
@@ -71,10 +72,6 @@ def handle_map_reply(received_message, my_sockets):
 
 
 def handle_map_register(received_message, my_sockets):
-    pass
-
-
-def handle_map_notify(received_message, my_sockets):
     pass
 
 

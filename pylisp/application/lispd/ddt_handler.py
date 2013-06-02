@@ -93,7 +93,7 @@ def handle_ddt_map_request(received_message, my_sockets):
 
     # TODO: Implement security [LISP-Security]
     if ecm.security:
-        logger.error("This handler can't handle security")
+        logger.error("We can't handle LISP-Security yet")
         return False
 
     # Look up the address in the tree

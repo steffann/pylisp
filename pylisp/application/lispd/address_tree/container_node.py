@@ -4,8 +4,7 @@ Created on 11 mrt. 2013
 @author: sander
 '''
 from ipaddress import ip_network
-from pylisp.application.lispd.address_tree.base import AbstractNode
-from pylisp.application.lispd.address_tree.exceptions import MoreSpecificsFoundError, NotAuthoritativeError
+from pylisp.application.lispd.address_tree.base import AbstractNode, MoreSpecificsFoundError, NotAuthoritativeError
 import logging
 
 
@@ -16,35 +15,36 @@ logger = logging.getLogger(__name__)
 class ContainerNode(AbstractNode):
     def __init__(self, prefix, children=None):
         super(ContainerNode, self).__init__(prefix)
-        self._children = set()
+        self.children = set()
 
         if children:
             self.update(children)
 
     def __repr__(self):
-        return '%s(%r, %r)' % (self.__class__.__name__, self._prefix,
-                               self._children)
+        return '%s(%r, %r)' % (self.__class__.__name__, self.prefix,
+                               self.children)
 
     def __iter__(self):
-        return iter(self._children)
+        return iter(self.children)
 
     def __len__(self):
-        return len(self._children)
+        return len(self.children)
 
     def resolve_path(self, address):
         '''
         Resolve the given address in this tree branch
         '''
-        match = self.find_one(address)
-        if not match:
-            return [self]
+        with self.lock:
+            match = self.find_one(address)
+            if not match:
+                return [self]
 
-        # Go further up the tree if possible
-        if isinstance(match, ContainerNode):
-            return match.resolve_path(address) + [self]
+            # Go further up the tree if possible
+            if isinstance(match, ContainerNode):
+                return match.resolve_path(address) + [self]
 
-        # This is as far as we go
-        return [match, self]
+            # This is as far as we go
+            return [match, self]
 
     def resolve(self, address):
         return self.resolve_path(address)[0]
@@ -91,17 +91,18 @@ class ContainerNode(AbstractNode):
         prefix = ip_network(prefix)
 
         # Check that we are authoritative for the given prefix
-        if not self._prefix.overlaps(prefix) \
-        or self._prefix[0] > prefix[0] \
-        or self._prefix[-1] < prefix[-1]:
+        if not self.prefix.overlaps(prefix) \
+        or self.prefix[0] > prefix[0] \
+        or self.prefix[-1] < prefix[-1]:
             raise NotAuthoritativeError('This node is not authoritative for %r'
                                         % prefix)
 
         # Find all matching existing prefixes and return them in a set
-        matches = set()
-        for child in self._children:
-            if prefix.overlaps(child.prefix):
-                matches.add(child)
+        with self.lock:
+            matches = set()
+            for child in self.children:
+                if prefix.overlaps(child.prefix):
+                    matches.add(child)
 
         return matches
 
@@ -109,9 +110,9 @@ class ContainerNode(AbstractNode):
         assert isinstance(child, AbstractNode)
 
         # Check that we are authoritative for the child
-        if not self._prefix.overlaps(child.prefix) \
-        or self._prefix[0] > child.prefix[0] \
-        or self._prefix[-1] < child.prefix[-1]:
+        if not self.prefix.overlaps(child.prefix) \
+        or self.prefix[0] > child.prefix[0] \
+        or self.prefix[-1] < child.prefix[-1]:
             raise NotAuthoritativeError('This node is not authoritative for %r'
                                         % child.prefix)
 
@@ -123,45 +124,52 @@ class ContainerNode(AbstractNode):
                                  'prefixes' % child.prefix)
 
         # Add the new child
-        self._children.add(child)
+        with self.lock:
+            self.children.add(child)
 
     def clear(self):
-        self._children = set()
+        with self.lock:
+            self.children = set()
 
     def __contains__(self, child):
-        # If a node is given then directly look for it
-        if isinstance(child, AbstractNode):
-            return child in self._children
+        with self.lock:
+            # If a node is given then directly look for it
+            if isinstance(child, AbstractNode):
+                return child in self.children
 
-        # Also allow to find a node by network
-        match = self.find_exact(child)
-        return bool(match)
+            # Also allow to find a node by network
+            match = self.find_exact(child)
+            return bool(match)
 
     def copy(self):
-        return self.__class__(self._prefix, self._children)
+        return self.__class__(self.prefix, self.children)
 
     def discard(self, child):
-        # If a node is given then directly discard it
-        if isinstance(child, AbstractNode):
-            self._children.discard(child)
-            return
+        with self.lock:
+            # If a node is given then directly discard it
+            if isinstance(child, AbstractNode):
+                self.children.discard(child)
+                return
 
-        # Also allow to discard a node by network
-        match = self.find_exact(child)
-        if match:
-            self._children.discard(match)
+            # Also allow to discard a node by network
+            match = self.find_exact(child)
+            if match:
+                self.children.discard(match)
 
     def remove(self, child):
-        orig_len = len(self)
-        self.discard(child)
-        if len(self) != orig_len:
-            raise KeyError(child)
+        with self.lock:
+            orig_len = len(self)
+            self.discard(child)
+            if len(self) != orig_len:
+                raise KeyError(child)
 
     def update(self, children):
-        for child in children:
-            self.add(child)
+        with self.lock:
+            for child in children:
+                self.add(child)
 
-    def cleanup(self):
-        super(ContainerNode, self).cleanup()
-        for child in self._children:
-            child.cleanup()
+    def process(self, my_sockets):
+        super(ContainerNode, self).process(my_sockets)
+        with self.lock:
+            for child in self.children:
+                child.process(my_sockets)
