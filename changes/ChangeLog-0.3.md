@@ -2,6 +2,7 @@ Version 0.3
 ===========
 Released: 2013-01-23 20:14:46 +0100
 
+ * Add changelog for 0.3
  * We can do Map-Registers and process Map-Notifies!
  * Add unicode output for LCAF addresses
  * And we have a semi-working lispd again!

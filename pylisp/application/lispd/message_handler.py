@@ -5,7 +5,7 @@ Created on 15 jan. 2013
 '''
 
 from pylisp.application.lispd.ddt_handler import handle_ddt_map_request
-from pylisp.application.lispd.etr_handler import handle_map_notify
+from pylisp.application.lispd.etr_handler import handle_map_notify, handle_map_request
 from pylisp.packet.lisp.control import (EncapsulatedControlMessage, MapNotifyMessage, MapReferralMessage,
     MapRegisterMessage, MapReplyMessage, MapRequestMessage)
 import logging
@@ -61,10 +61,6 @@ def handle_message(received_message, my_sockets):
             logger.warning("Unknown content in message %d", received_message.message_nr)
     except:
         logger.exception("Unexpected exception while handling message %d", received_message.message_nr)
-
-
-def handle_map_request(received_message, my_sockets):
-    pass
 
 
 def handle_map_reply(received_message, my_sockets):
