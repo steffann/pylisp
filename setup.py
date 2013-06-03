@@ -6,12 +6,12 @@ Created on 12 jan. 2013
 '''
 
 from setuptools import setup, find_packages
-from version import get_git_version
+from version import read_release_version
 import glob
 
 
 setup(name='pylisp',
-      version=get_git_version(),
+      version=read_release_version(),
       author='S.J.M. Steffann',
       author_email='sander@steffann.nl',
       license='BSD License',
