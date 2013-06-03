@@ -45,6 +45,7 @@ def call_git_describe(abbrev=4, commit_hash=None):
         p = Popen(cmd, stdout=PIPE, stderr=PIPE)
         p.stderr.close()
         line = p.stdout.readlines()[0]
+        p.wait()
         return line.strip()
 
     except:
@@ -68,6 +69,7 @@ def get_git_changelog(version, abbrev=4):
             p.stderr.close()
 
             commit_hash = p.stdout.readlines()[0].strip()
+            p.wait()
             if not commit_hash:
                 break
 
@@ -86,6 +88,8 @@ def get_git_changelog(version, abbrev=4):
             p = Popen(cmd, stdout=PIPE, stderr=PIPE)
             p.stderr.close()
             lines = p.stdout.readlines()
+            p.wait()
+
             lines = [l.strip() for l in lines]
             commits.append(lines)
 
@@ -100,6 +104,7 @@ def get_git_changelog(version, abbrev=4):
         p = Popen(cmd, stdout=PIPE, stderr=PIPE)
         p.stderr.close()
         when = p.stdout.readlines()[0].strip()
+        p.wait()
 
         # Build the changelog
         header = 'Version %s' % version
@@ -136,6 +141,15 @@ def write_release_version(version):
     f.write("%s\n" % version)
     f.close()
 
+    # Add the changelog
+    cmd = ['git', 'add', 'RELEASE-VERSION']
+    p = Popen(cmd)
+    p.wait()
+
+    cmd = ['git', 'commit', '-m', 'Adding/updating RELEASE-VERSION']
+    p = Popen(cmd)
+    p.wait()
+
 
 def write_changelog(version, changelog):
     filename = "changes/ChangeLog-%s.md" % version
@@ -146,7 +160,12 @@ def write_changelog(version, changelog):
 
     # Add the changelog
     cmd = ['git', 'add', filename]
-    Popen(cmd)
+    p = Popen(cmd)
+    p.wait()
+
+    cmd = ['git', 'commit', '-m', 'Adding/updating changelog']
+    p = Popen(cmd)
+    p.wait()
 
 
 def get_git_version(version=None, abbrev=4):
@@ -182,4 +201,9 @@ if __name__ == "__main__":
     print version
 
     cmd = ['git', 'tag', '-a', '-f', '-m', 'Tagging version %s' % version, version]
-    Popen(cmd)
+    p = Popen(cmd)
+    p.wait()
+
+    cmd = ['git', 'push', '--tags']
+    p = Popen(cmd)
+    p.wait()
