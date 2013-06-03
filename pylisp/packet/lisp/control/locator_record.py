@@ -18,7 +18,7 @@ __all__ = ['LocatorRecord']
 class LocatorRecord(object):
     def __init__(self, priority=255, weight=0, m_priority=255, m_weight=0,
                  local=False, probed_locator=False, reachable=False,
-                 locator=None):
+                 address=None):
         '''
         Constructor
         '''
@@ -30,7 +30,7 @@ class LocatorRecord(object):
         self.local = local
         self.probed_locator = probed_locator
         self.reachable = reachable
-        self.locator = locator
+        self.address = address
 
         # Store space for reserved bits
         self._reserved1 = BitArray(13)
@@ -127,15 +127,15 @@ class LocatorRecord(object):
         # SHOULD be a multicast address if it is being mapped from a
         # multicast destination EID.
 
-        if isinstance(self.locator, (IPv4Address, IPv6Address)):
-            addresses = [self.locator]
-        elif isinstance(self.locator, LCAFAddress):
-            addresses = self.locator.get_addresses()
+        if isinstance(self.address, (IPv4Address, IPv6Address)):
+            addresses = [self.address]
+        elif isinstance(self.address, LCAFAddress):
+            addresses = self.address.get_addresses()
         else:
             raise ValueError('Locator must be an (LCAF) IPv4 or IPv6 address')
 
         for address in addresses:
-            if isinstance(self.locator, IPv4Address):
+            if isinstance(self.address, IPv4Address):
                 if address == IPv4Address(u'255.255.255.255'):
                     raise ValueError('Locator must not be the broadcast '
                                      'address')
@@ -144,7 +144,7 @@ class LocatorRecord(object):
                     raise ValueError('Locator must not be a link-local '
                                      'multicast address')
 
-            elif isinstance(self.locator, IPv6Address):
+            elif isinstance(self.address, IPv6Address):
                 if address in IPv6Network(u'ff02::/16') \
                 or address in IPv6Network(u'ff12::/16'):
                     raise ValueError('Locator must not be a link-local '
@@ -180,7 +180,7 @@ class LocatorRecord(object):
          record.reachable) = bitstream.readlist('3*bool')
 
         # Read the locator
-        record.locator = read_afi_address_from_bitstream(bitstream)
+        record.address = read_afi_address_from_bitstream(bitstream)
 
         # Verify that the properties make sense
         record.sanitize()
@@ -217,6 +217,6 @@ class LocatorRecord(object):
                                  self.reachable))
 
         # Add the locator
-        bitstream += get_bitstream_for_afi_address(self.locator)
+        bitstream += get_bitstream_for_afi_address(self.address)
 
         return bitstream
