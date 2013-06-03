@@ -51,14 +51,9 @@ def call_git_describe(abbrev=4, commit_hash=None):
         return None
 
 
-def get_git_changelog(abbrev=4):
-    my_tag = call_git_describe(abbrev)
+def get_git_changelog(version, abbrev=4):
     prev_tag = None
     prev_tag_commit_hash = None
-
-    # Don't do changelogs for tags with a dash: they are commits between tags
-    if '-' in my_tag:
-        return None
 
     # Collect commits
     commits = []
@@ -81,7 +76,7 @@ def get_git_changelog(abbrev=4):
                 break
 
             # Only look at tags without a dash, others are commits between tags
-            if '-' not in tag and tag != my_tag:
+            if '-' not in tag and tag != version:
                 prev_tag_commit_hash = commit_hash
                 prev_tag = tag
                 break
@@ -107,7 +102,7 @@ def get_git_changelog(abbrev=4):
         when = p.stdout.readlines()[0].strip()
 
         # Build the changelog
-        header = 'Version %s' % my_tag
+        header = 'Version %s' % version
         changelog = [header,
                      '=' * len(header),
                      'Released: %s' % when,
@@ -143,17 +138,20 @@ def write_release_version(version):
 
 
 def write_changelog(version, changelog):
-    f = open("changes/ChangeLog-%s.md" % version, "w")
+    filename = "changes/ChangeLog-%s.md" % version
+
+    f = open(filename, "w")
     f.write('%s\n' % changelog)
     f.close()
 
+    # Add the changelog
+    cmd = ['git', 'add', filename]
+    Popen(cmd)
 
-def get_git_version(abbrev=4):
+
+def get_git_version(version=None, abbrev=4):
     # Read in the version that's currently in RELEASE-VERSION.
     release_version = read_release_version()
-
-    # First try to get the current version using “git describe”.
-    version = call_git_describe(abbrev)
 
     # If that doesn't work, fall back on the value that's in
     # RELEASE-VERSION.
@@ -170,7 +168,7 @@ def get_git_version(abbrev=4):
         write_release_version(version)
 
     # Get the changelog
-    changelog = get_git_changelog()
+    changelog = get_git_changelog(version)
     if changelog:
         write_changelog(version, changelog)
 
@@ -179,4 +177,9 @@ def get_git_version(abbrev=4):
 
 
 if __name__ == "__main__":
-    print get_git_version()
+    import sys
+    version = get_git_version(sys.argv[1])
+    print version
+
+    cmd = ['git', 'tag', '-a', '-f', '-m', 'Tagging version %s' % version, version]
+    Popen(cmd)
