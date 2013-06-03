@@ -91,9 +91,11 @@ class nfqueue_callback:
         self.sockets = data_plane_sockets
 
     def __call__(self, payload):
+        # Always drop the packet, we'll send a new one
+        payload.set_verdict(nfqueue.NF_DROP)
+
         if not settings.config.PETR:
             logger.error("PETR is not configured, dropping packet")
-            payload.set_verdict(nfqueue.NF_DROP)
             return
 
         try:
@@ -268,12 +270,18 @@ def main(argv=None):
                         message = DataPacket.from_bytes(data)
                         logger.debug("Seems to contain {0!r}".format(message))
 
+                        data = message.payload.to_bytes()
                         if isinstance(message.payload, IPv4Packet):
-                            raw_socket_ipv4.sendto(message.payload.to_bytes(),
-                                                   (unicode(message.payload.destination), 0))
-                        elif isinstance(message.payload, IPv6Packet):
-                            raw_socket_ipv6.sendto(message.payload.to_bytes(),
-                                                   (unicode(message.payload.destination), 0, 0, 0))
+                            raw_socket = raw_socket_ipv4
+                        else:
+                            raw_socket = raw_socket_ipv6
+
+                        sent = raw_socket.sendto(data, (unicode(message.payload.destination), 0))
+                        if sent != len(data):
+                            logger.error("Could not send decapsulated packet {0!r}".format(message.payload))
+                        else:
+                            logger.debug("Sent decapsulated packet of {0} bytes".format(sent))
+
                     elif sock in nfqueues:
                         logger.debug("Triggered NFQUEUE")
                         sock.process_pending(5)

@@ -29,6 +29,18 @@ INSTANCES = {
        }
 }
 
+# Using iptables to intercept outbound traffic:
+#  iptables --table mangle --append POSTROUTING -s 37.77.57.120/29 --out-interface eth0 -j NFQUEUE --queue-num 1
+#  ip6tables --table mangle --append POSTROUTING -s 2a00:8640:100d::/48 --out-interface eth0 -j NFQUEUE --queue-num 2
+#
+# Setting a fake default route for IPv6:
+#  ip -6 route add default dev eth0
+#
+# Setting up interface dummy0 with:
+#  modprobe dummy
+#  ip -4 addr add 37.77.57.120/32 dev dummy0
+#  ip -6 addr add 2a00:8640:100d::1/128 dev dummy0
+
 PETR = IPv4Address(u'37.77.56.1')
 NFQUEUE_IPV4 = 1
 NFQUEUE_IPV6 = 2
