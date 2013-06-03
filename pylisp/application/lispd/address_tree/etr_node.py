@@ -19,9 +19,9 @@ import time
 logger = logging.getLogger(__name__)
 
 
-class MapServerClientNode(AbstractNode):
+class ETRNode(AbstractNode):
     def __init__(self, prefix, locators=None, map_servers=None):
-        super(MapServerClientNode, self).__init__(prefix)
+        super(ETRNode, self).__init__(prefix)
 
         # Store copies so that the state doesn't get mixed up if the caller re-uses the same locator
         # and map-server object multiple times
@@ -43,14 +43,23 @@ class MapServerClientNode(AbstractNode):
                 raise ValueError(u"Map-Server data must be instance of MapServerRegistration")
 
     def process(self, my_sockets):
-        super(MapServerClientNode, self).process(my_sockets)
+        super(ETRNode, self).process(my_sockets)
 
         now = time.time()
 
-        record = MapRegisterRecord(ttl=300,
+        # Copy locators and adjust
+        locators = copy.deepcopy(self.locators)
+
+        # Pretend that all locators are reachable
+        # TODO: implement something better
+        for locator in locators:
+            locator.probed_locator = False
+            locator.reachable = True
+
+        record = MapRegisterRecord(ttl=1440,
                                    authoritative=True,
                                    eid_prefix=self.prefix,
-                                   locator_records=self.locators)
+                                   locator_records=locators)
 
         for ms_data in self.map_servers:
             assert isinstance(ms_data, MapServerRegistration)
@@ -65,8 +74,6 @@ class MapServerClientNode(AbstractNode):
                 else:
                     if now - ms_data.last_sent < 60:
                         # We sent one in the last minute, don't resend right now
-                        logger.debug(u"Recently sent a Map-Register for {0} to {1}"
-                                     ", skipping".format(self.prefix, ms_data.map_server))
                         continue
                     else:
                         logger.info(u"Sending a Map-Register for {0} to {1}".format(self.prefix, ms_data.map_server))
@@ -92,5 +99,3 @@ class MapServerClientNode(AbstractNode):
 
                 # Remember that we sent one
                 ms_data.last_sent = now
-
-        self.last_sent = time.time()

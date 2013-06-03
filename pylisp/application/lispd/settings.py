@@ -33,6 +33,10 @@ class Settings(object):
         self.INSTANCES = {}
         self.THREAD_POOL_SIZE = None
 
+        self.PETR = None
+        self.NFQUEUE_IPV4 = None
+        self.NFQUEUE_IPV6 = None
+
         # Set the defaults
         self.set_defaults()
 

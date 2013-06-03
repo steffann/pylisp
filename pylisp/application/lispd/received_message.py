@@ -17,7 +17,7 @@ class ReceivedMessage(object):
     counter = 0
     counter_lock = Lock()
 
-    def __init__(self, message, source, socket, message_nr=None):
+    def __init__(self, source, destination, message, socket, message_nr=None):
 
         if message_nr:
             self.message_nr = message_nr
@@ -27,8 +27,9 @@ class ReceivedMessage(object):
                 ReceivedMessage.counter += 1
                 self.message_nr = ReceivedMessage.counter
 
-        self.message = message
         self.source = source
+        self.destination = destination
+        self.message = message
         self.socket = socket
 
         # Sanity check

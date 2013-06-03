@@ -4,5 +4,5 @@ from .base import (AbstractNode, AddressTreeError, MapServerNotRegistered, Deleg
 from .container_node import ContainerNode
 from .ddt_referral_node import DDTReferralNode
 from .drop_node import DropNode
-from .map_server_client_node import MapServerClientNode
+from .etr_node import ETRNode
 from .natively_forward_node import NativelyForwardNode

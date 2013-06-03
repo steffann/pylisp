@@ -265,6 +265,13 @@ class MapReferralRecord(object):
 
             locator_record.sanitize()
 
+        # For each Map-Reply record, the list of Locators in a Locator-Set MUST
+        # appear in the same order for each ETR that originates a Map-Reply
+        # message.  The Locator-Set MUST be sorted in order of ascending IP
+        # address where an IPv4 locator address is considered numerically 'less
+        # than' an IPv6 locator address.
+        self.locator_records.sort(key=LocatorRecord.sort_key)
+
         # Check signatures
         for dummy in self.signatures:
             # TODO: Implement signatures [LISP-Security]
