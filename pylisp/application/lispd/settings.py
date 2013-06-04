@@ -66,7 +66,7 @@ class Settings(object):
         # Listen to the IP addresses that correspond with my hostname
         my_hostname = socket.getfqdn()
         addresses = socket.getaddrinfo(my_hostname, 4342, 0, 0, socket.SOL_UDP)
-        listen_on = [address[4] for address in addresses]
+        listen_on = [address[4][0] for address in addresses]
         return listen_on
 
     def get_config_paths(self, config_file):
