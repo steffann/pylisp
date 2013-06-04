@@ -6,7 +6,6 @@ Created on 11 jan. 2013
 from bitstring import BitStream, ConstBitStream, Bits
 from pylisp.packet.ip import protocol_registry
 from pylisp.packet.ip.ipv6.base import IPv6ExtensionHeader
-import math
 
 
 class IPv6FragmentHeader(IPv6ExtensionHeader):
@@ -75,11 +74,6 @@ class IPv6FragmentHeader(IPv6ExtensionHeader):
 
         # Write the next header type
         bitstream = BitStream('uint:8=%d' % self.next_header)
-
-        # Write the header length
-        header_length_unpadded = len(self.data) + 4
-        header_length = math.ceil(header_length_unpadded / 8.0)
-        bitstream += BitStream('uint:8=%d' % (header_length - 1))
 
         # Add the reserved bits
         bitstream += BitStream(8)

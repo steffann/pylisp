@@ -136,7 +136,7 @@ class IPv4Packet(Protocol):
             raise ValueError('Destination address must be IPv4')
 
     @classmethod
-    def from_bytes(cls, bitstream):
+    def from_bytes(cls, bitstream, decode_payload=True):
         '''
         Parse the given packet and update properties accordingly
         '''
@@ -215,9 +215,10 @@ class IPv4Packet(Protocol):
         payload_bytes = (total_length) - (ihl * 4)
         packet.payload = bitstream.read('bytes:%d' % payload_bytes)
 
-        payload_class = protocol_registry.get_type_class(packet.protocol)
-        if payload_class:
-            packet.payload = payload_class.from_bytes(packet.payload)
+        if decode_payload:
+            payload_class = protocol_registry.get_type_class(packet.protocol)
+            if payload_class:
+                packet.payload = payload_class.from_bytes(packet.payload)
 
         # There should be no remaining bits
         if bitstream.pos != bitstream.len:
