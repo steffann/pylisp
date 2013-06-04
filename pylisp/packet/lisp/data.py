@@ -107,7 +107,7 @@ class DataPacket(ProtocolElement):
                 raise ValueError('Invalid instance id')
 
     @classmethod
-    def from_bytes(cls, bitstream):
+    def from_bytes(cls, bitstream, decode_payload=True):
         r'''
         Parse the given packet and update properties accordingly
 
@@ -199,9 +199,9 @@ class DataPacket(ProtocolElement):
         if len(remaining):
             ip_version = remaining.peek('uint:4')
             if ip_version == 4:
-                packet.payload = IPv4Packet.from_bytes(remaining)
+                packet.payload = IPv4Packet.from_bytes(remaining, decode_payload=decode_payload)
             elif ip_version == 6:
-                packet.payload = IPv6Packet.from_bytes(remaining)
+                packet.payload = IPv6Packet.from_bytes(remaining, decode_payload=decode_payload)
             else:
                 packet.payload = remaining.bytes
 

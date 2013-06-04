@@ -101,7 +101,7 @@ class IPv6Packet(Protocol):
             raise ValueError('Destination address must be IPv6')
 
     @classmethod
-    def from_bytes(cls, bitstream):
+    def from_bytes(cls, bitstream, decode_payload=True):
         '''
         Parse the given packet and update properties accordingly
         '''
@@ -141,9 +141,10 @@ class IPv6Packet(Protocol):
         # And the rest is payload
         packet.payload = bitstream.read('bytes:%d' % payload_length)
 
-        payload_class = protocol_registry.get_type_class(packet.next_header)
-        if payload_class:
-            packet.payload = payload_class.from_bytes(packet.payload)
+        if decode_payload:
+            payload_class = protocol_registry.get_type_class(packet.next_header)
+            if payload_class:
+                packet.payload = payload_class.from_bytes(packet.payload)
 
         # There should be no remaining bits
         if bitstream.pos != bitstream.len:

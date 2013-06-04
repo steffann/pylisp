@@ -15,7 +15,7 @@ from pylisp.application.lispd.message_handler import handle_message
 from pylisp.application.lispd.received_message import ReceivedMessage
 from pylisp.application.lispd.settings import ConfigurationError
 from pylisp.packet.ip.ipv4 import IPv4Packet
-from pylisp.packet.ip.ipv6.base import IPv6Packet
+from pylisp.packet.ip.ipv6 import IPv6Packet
 from pylisp.packet.lisp.control import ControlMessage
 from pylisp.packet.lisp.data import DataPacket
 from pylisp.utils.task_thread import TaskThread
@@ -102,15 +102,16 @@ class nfqueue_callback:
             logger.debug("NFQUEUE callback called: {0} bytes of data".format(payload.get_length()))
             data = payload.get_data()
 
-#             family = ord(data[0]) >> 4
-#             if family == 4:
-#                 packet = IPv4Packet.from_bytes(data)
-#             elif family == 6:
-#                 packet = IPv6Packet.from_bytes(data)
-#             else:
-#                 logger.warn("Unknown data packet family {0}".format(family))
-#
-#             logger.debug("Data contents: {0!r}".format(packet))
+            family = ord(data[0]) >> 4
+            if family == 4:
+                packet = IPv4Packet.from_bytes(data, decode_payload=False)
+            elif family == 6:
+                packet = IPv6Packet.from_bytes(data, decode_payload=False)
+            else:
+                logger.error("Unknown data packet family {0}".format(family))
+                return
+
+            logger.debug("Data contents: {0!r}".format(packet))
 
             # Encapsulate data
             message = DataPacket(payload=data)
