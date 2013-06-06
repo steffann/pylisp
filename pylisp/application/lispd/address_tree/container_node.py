@@ -168,8 +168,8 @@ class ContainerNode(AbstractNode):
             for child in children:
                 self.add(child)
 
-    def process(self, my_sockets):
-        super(ContainerNode, self).process(my_sockets)
+    def process(self, control_plane_sockets, data_plane_sockets):
+        super(ContainerNode, self).process(control_plane_sockets, data_plane_sockets)
         with self.lock:
             for child in self.children:
-                child.process(my_sockets)
+                child.process(control_plane_sockets, data_plane_sockets)

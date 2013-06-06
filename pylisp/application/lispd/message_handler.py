@@ -9,6 +9,7 @@ from pylisp.application.lispd.etr_handler import handle_map_notify, handle_map_r
 from pylisp.packet.lisp.control import (EncapsulatedControlMessage, MapNotifyMessage, MapReferralMessage,
     MapRegisterMessage, MapReplyMessage, MapRequestMessage)
 import logging
+from pylisp.packet.lisp.control.info_message import InfoMessage
 
 
 # Get the logger
@@ -20,10 +21,15 @@ def handle_message(received_message, my_sockets):
     Handle a LISP message. The default handle method determines the type
     of message and delegates it to the more specific method
     """
-    logger.debug("Handling message %d from %r: %r",
+#     logger.debug("Handling message %d from %r: %r",
+#                  received_message.message_nr,
+#                  received_message.source,
+#                  received_message.message)
+
+    logger.debug("Handling message %d from %r: %d bytes",
                  received_message.message_nr,
                  received_message.source,
-                 received_message.message)
+                 len(bytes(received_message.message)))
 
     try:
         if isinstance(received_message.message, MapRequestMessage):
@@ -57,6 +63,8 @@ def handle_message(received_message, my_sockets):
                     handle_enc_map_request(received_message, my_sockets)
             else:
                 logger.warning("ECM does not contain a map-request in message %d", received_message.message_nr)
+        elif isinstance(received_message.message, InfoMessage):
+            pass
         else:
             logger.warning("Unknown content in message %d", received_message.message_nr)
     except:

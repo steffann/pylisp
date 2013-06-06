@@ -14,7 +14,7 @@ import threading
 logger = logging.getLogger(__name__)
 
 
-class MapServerRegistration:
+class MapServerRegistration(object):
     def __init__(self, map_server, key_id=KEY_ID_NONE, key=None, proxy_map_reply=False):
         # Lock
         self.lock = threading.RLock()

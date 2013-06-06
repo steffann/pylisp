@@ -3,8 +3,13 @@ Created on 2 jun. 2013
 
 @author: sander
 '''
-import threading
 from abc import ABCMeta, abstractmethod
+import logging
+import threading
+
+
+# Get the logger
+logger = logging.getLogger(__name__)
 
 
 class TaskThread(threading.Thread):
@@ -30,7 +35,10 @@ class TaskThread(threading.Thread):
             if self._finished.isSet():
                 return
 
-            self.task()
+            try:
+                self.task()
+            except:
+                logger.exception("Uncaught exception in task")
 
             # sleep for interval or until shutdown
             self._finished.wait(self._interval)

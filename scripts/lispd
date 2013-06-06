@@ -8,22 +8,22 @@ requests to other systems on behalf of other applications.
 """
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-from ipaddress import ip_address, IPv4Address
 from multiprocessing.dummy import Pool
 from pylisp.application.lispd import settings
 from pylisp.application.lispd.message_handler import handle_message
 from pylisp.application.lispd.received_message import ReceivedMessage
+from pylisp.application.lispd.send_message import send_message
 from pylisp.application.lispd.settings import ConfigurationError
 from pylisp.packet.ip.ipv4 import IPv4Packet
 from pylisp.packet.ip.ipv6 import IPv6Packet
 from pylisp.packet.lisp.control import ControlMessage
 from pylisp.packet.lisp.data import DataPacket
+from pylisp.utils.auto_addresses import AutoUDPSocket, AutoAddress
 from pylisp.utils.task_thread import TaskThread
 import logging
 import select
 import socket
 import sys
-from pylisp.application.lispd.send_message import send_message
 
 
 try:
@@ -39,48 +39,15 @@ def create_sockets(config):
     control_plane_sockets = []
     data_plane_sockets = []
     for address in config.LISTEN_ON:
-        # (re)parse the address
-        address = ip_address(unicode(address))
+        # Socket on lisp-data port
+        port = 4341
+        logger.info(u"Binding data-plane socket to %s port %d" % (address, port))
+        data_plane_sockets.append(AutoUDPSocket(address, port))
 
-        # Determine the address family
-        if isinstance(address, IPv4Address):
-            family = socket.AF_INET
-        else:
-            family = socket.AF_INET6
-
-        # Refuse to bind to loopback, link-local, wild-card or multicast addresses
-        if address.is_loopback:
-            logger.error(u"Cannot bind to loopback address {0}".format(address))
-            continue
-
-        if address.is_link_local:
-            logger.error(u"Cannot bind to link-local address {0}".format(address))
-            continue
-
-        if address.is_multicast:
-            logger.error(u"Cannot bind to multicast address {0}".format(address))
-            continue
-
-        if address.is_unspecified:
-            logger.error(u"Cannot bind to unspecified address {0}".format(address))
-            continue
-
-        # Convert back to a string
-        address = unicode(address)
-
-        logger.info(u"Binding data-plane socket to %s port %d" % (address, 4341))
-
-        # Create the socket and bind to it
-        sock = socket.socket(family, socket.SOCK_DGRAM, socket.SOL_UDP)
-        sock.bind((address, 4341))
-        data_plane_sockets.append(sock)
-
-        logger.info(u"Binding control-plane socket to %s port %d" % (address, 4342))
-
-        # Create the socket and bind to it
-        sock = socket.socket(family, socket.SOCK_DGRAM, socket.SOL_UDP)
-        sock.bind((address, 4342))
-        control_plane_sockets.append(sock)
+        # Socket on lisp-control port
+        port = 4342
+        logger.info(u"Binding control-plane socket to %s port %d" % (address, port))
+        control_plane_sockets.append(AutoUDPSocket(address, port))
 
     return control_plane_sockets, data_plane_sockets
 
@@ -122,17 +89,23 @@ class nfqueue_callback:
 
 
 class BackgroundProcessingTask(TaskThread):
-    def __init__(self, config, my_sockets):
+    def __init__(self, config, control_plane_sockets, data_plane_sockets):
         super(BackgroundProcessingTask, self).__init__(interval=10)
         self.config = config
-        self.my_sockets = my_sockets
+        self.control_plane_sockets = control_plane_sockets
+        self.data_plane_sockets = data_plane_sockets
 
     def task(self):
         logger.debug("Running background processing")
         with self.config.lock:
+            # Check the addresses of all sockets
+            for sock in self.control_plane_sockets + self.data_plane_sockets:
+                sock.rebind()
+
             for instance in self.config.INSTANCES:
                 for afi in self.config.INSTANCES[instance]:
-                    self.config.INSTANCES[instance][afi].process(self.my_sockets)
+                    self.config.INSTANCES[instance][afi].process(control_plane_sockets=self.control_plane_sockets,
+                                                                 data_plane_sockets=self.data_plane_sockets)
         logger.debug("Finished background processing")
 
 
@@ -233,65 +206,78 @@ def main(argv=None):
         pool = Pool(processes=settings.config.THREAD_POOL_SIZE)
 
         # Create the timer for processing
-        processing_timer = BackgroundProcessingTask(settings.config, control_plane_sockets)
+        processing_timer = BackgroundProcessingTask(settings.config, control_plane_sockets, data_plane_sockets)
         processing_timer.start()
 
         logger.info("Waiting for incoming messages to process")
         while True:
             try:
                 # Get the active sockets
-                rlist, dummy, dummy = select.select(control_plane_sockets + data_plane_sockets + nfqueues, [], [])
+                real_sockets = [sock
+                                for sock in control_plane_sockets + data_plane_sockets
+                                if sock.fileno() is not None]
+                rlist, dummy, dummy = select.select(real_sockets + nfqueues, [], [])
 
                 for sock in rlist:
                     if sock in control_plane_sockets:
-                        data, addr = sock.recvfrom(65536)
-                        logger.debug("Received %d bytes of control-plane traffic from %r", len(data), addr)
-
-                        # Parse input
+                        addr = "Unknown"
                         try:
+                            data, addr = sock.recvfrom(65536)
+                            logger.debug("Received %d bytes of control-plane traffic from %r", len(data), addr)
+                            if not data:
+                                return 3
+
+                            # Parse input
                             message = ControlMessage.from_bytes(data)
                             received_message = ReceivedMessage(source=addr,
-                                                               destination=sock.getsockname(),
+                                                               destination=(sock.address, sock.port),
                                                                message=message,
                                                                socket=sock)
-                        except Exception, e:
-                            logger.error("Error in control-plane message from %r: %s", addr, e)
 
-                        # Dispatch
-                        try:
+                            # Dispatch
                             kwds = {'received_message': received_message,
                                     'my_sockets': control_plane_sockets}
                             pool.apply_async(handle_message, kwds=kwds)
-                        except Exception, e:
-                            logger.error("Uncaught exception when handling control-plane message from %r: %s", addr, e)
+                        except:
+                            logger.exception(u"Uncaught exception when handling control-plane message from %s", addr)
+
                     elif sock in data_plane_sockets:
-                        data, addr = sock.recvfrom(65536)
-                        logger.debug("Received %d bytes of data-plane traffic from %r", len(data), addr)
+                        addr = "Unknown"
+                        try:
+                            data, addr = sock.recvfrom(65536)
+                            logger.debug(u"Received %d bytes of data-plane traffic from %r", len(data), addr)
+                            if not data:
+                                return 3
 
-                        message = DataPacket.from_bytes(data)
-                        logger.debug("Seems to contain {0!r}".format(message))
+                            message = DataPacket.from_bytes(data)
+                            logger.debug(u"Seems to contain {0!r}".format(message))
 
-                        data = message.payload.to_bytes()
-                        if isinstance(message.payload, IPv4Packet):
-                            raw_socket = raw_socket_ipv4
-                        else:
-                            raw_socket = raw_socket_ipv6
+                            data = message.payload.to_bytes()
+                            if isinstance(message.payload, IPv4Packet):
+                                raw_socket = raw_socket_ipv4
+                            else:
+                                raw_socket = raw_socket_ipv6
 
-                        sent = raw_socket.sendto(data, (unicode(message.payload.destination), 0))
-                        if sent != len(data):
-                            logger.error("Could not send decapsulated packet {0!r}".format(message.payload))
-                        else:
-                            logger.debug("Sent decapsulated packet of {0} bytes".format(sent))
+                            sent = raw_socket.sendto(data, (unicode(message.payload.destination), 0))
+                            if sent != len(data):
+                                logger.error(u"Could not send decapsulated packet {0!r}".format(message.payload))
+                            else:
+                                logger.debug(u"Sent decapsulated packet of {0} bytes".format(sent))
+                        except:
+                            logger.exception(u"Uncaught exception when handling data-plane message from %s", addr)
 
                     elif sock in nfqueues:
-                        logger.debug("Triggered NFQUEUE")
-                        sock.process_pending(5)
+                        try:
+                            logger.debug(u"Triggered NFQUEUE")
+                            sock.process_pending(5)
+                        except:
+                            logger.exception(u"Uncaught exception when handling NFQUEUE message")
 
             except KeyboardInterrupt:
                 logger.info("Interupted")
                 break
-            except Exception, e:
-                logger.exception("Unexpected exception: %s" % e)
+            except:
+                logger.exception("Unexpected exception")
 
         logger.info("Shutting down")
 
@@ -308,7 +294,7 @@ def main(argv=None):
         return 0
     except ConfigurationError:
         return 1
-    except Exception, e:
+    except:
         logger.exception("Unexpected exception")
         return 2
 
