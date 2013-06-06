@@ -33,7 +33,7 @@ class AbstractNode(object):
     def __nonzero__(self):
         return True
 
-    def process(self, my_sockets):
+    def process(self, control_plane_sockets, data_plane_sockets):
         logger.debug('Processing {0}'.format('%s(%r)' % (self.__class__.__name__, self.prefix)))
 
 

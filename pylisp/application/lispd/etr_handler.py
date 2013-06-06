@@ -14,7 +14,6 @@ from pylisp.packet.lisp.control.map_reply import MapReplyMessage
 from pylisp.packet.lisp.control.map_reply_record import MapReplyRecord
 from pylisp.packet.lisp.control.map_request import MapRequestMessage
 from pylisp.utils.lcaf.instance_address import LCAFInstanceAddress
-import copy
 import logging
 import time
 
@@ -108,7 +107,7 @@ def handle_map_request(received_message, my_sockets):
         return
 
     # Return our locators
-    locators = copy.deepcopy(node.locators)
+    locators = node.get_locators(my_sockets)
 
     # Do we have locators?
     if locators:

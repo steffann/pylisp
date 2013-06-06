@@ -24,3 +24,4 @@ from map_register import MapRegisterMessage
 from map_notify import MapNotifyMessage
 from map_referral import MapReferralMessage
 from encapsulated_control_message import EncapsulatedControlMessage
+from info_message import InfoMessage
