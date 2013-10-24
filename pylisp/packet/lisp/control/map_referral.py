@@ -95,10 +95,6 @@ class MapReferralMessage(ControlMessage):
             record = MapReferralRecord.from_bytes(bitstream)
             packet.records.append(record)
 
-        # There should be no remaining bits
-        if bitstream.pos != bitstream.len:
-            raise ValueError('Bits remaining after processing packet')
-
         # Verify that the properties make sense
         packet.sanitize()
 

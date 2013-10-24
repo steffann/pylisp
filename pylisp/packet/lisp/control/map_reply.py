@@ -128,10 +128,6 @@ class MapReplyMessage(ControlMessage):
             raise NotImplementedError('Handling security data is not ' +
                                       'implemented yet')
 
-        # There should be no remaining bits
-        if bitstream.pos != bitstream.len:
-            raise ValueError('Bits remaining after processing packet')
-
         # Verify that the properties make sense
         packet.sanitize()
 

@@ -261,10 +261,6 @@ class MapRegisterMessage(ControlMessage):
             packet.xtr_id = bitstream.read('uint:128')
             packet.site_id = bitstream.read('uint:64')
 
-        # There should be no remaining bits
-        if bitstream.pos != bitstream.len:
-            raise ValueError('Bits remaining after processing packet')
-
         # Verify that the properties make sense
         packet.sanitize()
 

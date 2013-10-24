@@ -7,13 +7,19 @@ from bitstring import ConstBitStream, BitArray, Bits
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from pylisp.application.lispd.utils.prefix import determine_instance_id_and_afi
 from pylisp.utils.afi import read_afi_address_from_bitstream, get_bitstream_for_afi_address
+from pylisp.utils.auto_addresses import AutoAddress
 from pylisp.utils.lcaf.base import LCAFAddress
 from pylisp.utils.represent import represent
+import logging
 import numbers
-import threading
+import weakref
 
 
 __all__ = ['LocatorRecord']
+
+
+# Get the logger
+logger = logging.getLogger(__name__)
 
 
 class LocatorRecord(object):
@@ -23,9 +29,6 @@ class LocatorRecord(object):
         '''
         Constructor
         '''
-        # Create lock
-        self.lock = threading.RLock()
-
         # Set defaults
         self.priority = priority
         self.weight = weight
@@ -38,6 +41,49 @@ class LocatorRecord(object):
 
         # Store space for reserved bits
         self._reserved1 = BitArray(13)
+
+        # Remember who wants to be notified on change
+        self._notify_targets = weakref.WeakSet()
+
+        # Request notifications if we are using an AutoAddress
+        if isinstance(self.address, AutoAddress):
+            self.address.add_notify_target(self)
+
+    def __eq__(self, other):
+        # Equal if properties are equal, not counting notification targets etc
+        return (self.priority == other.priority and
+                self.weight == other.weight and
+                self.m_priority == other.m_priority and
+                self.m_weight == other.m_weight and
+                self.local == other.local and
+                self.probed_locator == other.probed_locator and
+                self.reachable == other.reachable and
+                self.address == other.address and
+                self._reserved1 == other._reserved1)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        # Hash them together based on address
+        return hash(self.address)
+
+    def add_notify_target(self, notify_target):
+        self._notify_targets.add(notify_target)
+
+    def remove_notify_target(self, notify_target):
+        self._notify_targets.discard(notify_target)
+
+    def _send_notifications(self):
+        for notify_target in self._notify_targets:
+            try:
+                notify_target.on_locator_change()
+            except:
+                logger.exception("{0!r} notify target {1!r} has thrown an exception".format(self, notify_target))
+
+    def on_address_change(self, address):
+        logger.info("{0!r} received a notification that our address has changed".format(self))
+        self._send_notifications()
 
     @staticmethod
     def sort_key(locator):
@@ -53,116 +99,115 @@ class LocatorRecord(object):
         Check if the current settings conform to the LISP specifications and
         fix where possible.
         '''
-        with self.lock:
-            # Priority:  each RLOC is assigned a unicast priority.  Lower values
-            # are more preferable.  When multiple RLOCs have the same priority,
-            # they MAY be used in a load-split fashion.  A value of 255 means
-            # the RLOC MUST NOT be used for unicast forwarding.
-            if not isinstance(self.priority, numbers.Integral) \
-            or self.priority < 0 or self.priority > 255:
-                raise ValueError('Invalid priority')
+        # Priority:  each RLOC is assigned a unicast priority.  Lower values
+        # are more preferable.  When multiple RLOCs have the same priority,
+        # they MAY be used in a load-split fashion.  A value of 255 means
+        # the RLOC MUST NOT be used for unicast forwarding.
+        if not isinstance(self.priority, numbers.Integral) \
+        or self.priority < 0 or self.priority > 255:
+            raise ValueError('Invalid priority')
 
-            # Weight:  when priorities are the same for multiple RLOCs, the weight
-            # indicates how to balance unicast traffic between them.  Weight is
-            # encoded as a relative weight of total unicast packets that match
-            # the mapping entry.  For example if there are 4 locators in a
-            # locator set, where the weights assigned are 30, 20, 20, and 10,
-            # the first locator will get 37.5% of the traffic, the 2nd and 3rd
-            # locators will get 25% of traffic and the 4th locator will get
-            # 12.5% of the traffic.  If all weights for a locator-set are equal,
-            # receiver of the Map-Reply will decide how to load-split traffic.
-            # See Section 6.5 for a suggested hash algorithm to distribute load
-            # across locators with same priority and equal weight values.
-            #
-            # WARNING: Cisco implementations limit the weight to the range 0-100
-            if not isinstance(self.weight, numbers.Integral) \
-            or self.weight < 0 or self.weight > 255:
-                raise ValueError('Invalid weight')
+        # Weight:  when priorities are the same for multiple RLOCs, the weight
+        # indicates how to balance unicast traffic between them.  Weight is
+        # encoded as a relative weight of total unicast packets that match
+        # the mapping entry.  For example if there are 4 locators in a
+        # locator set, where the weights assigned are 30, 20, 20, and 10,
+        # the first locator will get 37.5% of the traffic, the 2nd and 3rd
+        # locators will get 25% of traffic and the 4th locator will get
+        # 12.5% of the traffic.  If all weights for a locator-set are equal,
+        # receiver of the Map-Reply will decide how to load-split traffic.
+        # See Section 6.5 for a suggested hash algorithm to distribute load
+        # across locators with same priority and equal weight values.
+        #
+        # WARNING: Cisco implementations limit the weight to the range 0-100
+        if not isinstance(self.weight, numbers.Integral) \
+        or self.weight < 0 or self.weight > 255:
+            raise ValueError('Invalid weight')
 
-            # M Priority:  each RLOC is assigned a multicast priority used by an
-            # ETR in a receiver multicast site to select an ITR in a source
-            # multicast site for building multicast distribution trees.  A value
-            # of 255 means the RLOC MUST NOT be used for joining a multicast
-            # distribution tree.  For more details, see [MLISP].
-            if not isinstance(self.m_priority, numbers.Integral) \
-            or self.m_priority < 0 or self.m_priority > 255:
-                raise ValueError('Invalid multicast priority')
+        # M Priority:  each RLOC is assigned a multicast priority used by an
+        # ETR in a receiver multicast site to select an ITR in a source
+        # multicast site for building multicast distribution trees.  A value
+        # of 255 means the RLOC MUST NOT be used for joining a multicast
+        # distribution tree.  For more details, see [MLISP].
+        if not isinstance(self.m_priority, numbers.Integral) \
+        or self.m_priority < 0 or self.m_priority > 255:
+            raise ValueError('Invalid multicast priority')
 
-            # M Weight:  when priorities are the same for multiple RLOCs, the
-            # weight indicates how to balance building multicast distribution
-            # trees across multiple ITRs.  The weight is encoded as a relative
-            # weight (similar to the unicast Weights) of total number of trees
-            # built to the source site identified by the EID-prefix.  If all
-            # weights for a locator-set are equal, the receiver of the Map-Reply
-            # will decide how to distribute multicast state across ITRs.  For
-            # more details, see [MLISP].
-            if not isinstance(self.m_weight, numbers.Integral) \
-            or self.m_weight < 0 or self.m_weight > 255:
-                raise ValueError('Invalid weight')
+        # M Weight:  when priorities are the same for multiple RLOCs, the
+        # weight indicates how to balance building multicast distribution
+        # trees across multiple ITRs.  The weight is encoded as a relative
+        # weight (similar to the unicast Weights) of total number of trees
+        # built to the source site identified by the EID-prefix.  If all
+        # weights for a locator-set are equal, the receiver of the Map-Reply
+        # will decide how to distribute multicast state across ITRs.  For
+        # more details, see [MLISP].
+        if not isinstance(self.m_weight, numbers.Integral) \
+        or self.m_weight < 0 or self.m_weight > 255:
+            raise ValueError('Invalid weight')
 
-            # L: when this bit is set, the locator is flagged as a local locator to
-            # the ETR that is sending the Map-Reply.  When a Map-Server is doing
-            # proxy Map-Replying [LISP-MS] for a LISP site, the L bit is set to
-            # 0 for all locators in this locator-set.
-            if not isinstance(self.local, bool):
-                raise ValueError('Local flag must be a boolean')
+        # L: when this bit is set, the locator is flagged as a local locator to
+        # the ETR that is sending the Map-Reply.  When a Map-Server is doing
+        # proxy Map-Replying [LISP-MS] for a LISP site, the L bit is set to
+        # 0 for all locators in this locator-set.
+        if not isinstance(self.local, bool):
+            raise ValueError('Local flag must be a boolean')
 
-            # p: when this bit is set, an ETR informs the RLOC-probing ITR that the
-            # locator address, for which this bit is set, is the one being RLOC-
-            # probed and MAY be different from the source address of the Map-
-            # Reply.  An ITR that RLOC-probes a particular locator, MUST use
-            # this locator for retrieving the data structure used to store the
-            # fact that the locator is reachable.  The "p" bit is set for a
-            # single locator in the same locator set.  If an implementation sets
-            # more than one "p" bit erroneously, the receiver of the Map-Reply
-            # MUST select the first locator.  The "p" bit MUST NOT be set for
-            # locator-set records sent in Map-Request and Map-Register messages.
-            if not isinstance(self.probed_locator, bool):
-                raise ValueError('Probed Locator flag must be a boolean')
+        # p: when this bit is set, an ETR informs the RLOC-probing ITR that the
+        # locator address, for which this bit is set, is the one being RLOC-
+        # probed and MAY be different from the source address of the Map-
+        # Reply.  An ITR that RLOC-probes a particular locator, MUST use
+        # this locator for retrieving the data structure used to store the
+        # fact that the locator is reachable.  The "p" bit is set for a
+        # single locator in the same locator set.  If an implementation sets
+        # more than one "p" bit erroneously, the receiver of the Map-Reply
+        # MUST select the first locator.  The "p" bit MUST NOT be set for
+        # locator-set records sent in Map-Request and Map-Register messages.
+        if not isinstance(self.probed_locator, bool):
+            raise ValueError('Probed Locator flag must be a boolean')
 
-            # R: set when the sender of a Map-Reply has a route to the locator in
-            # the locator data record.  This receiver may find this useful to
-            # know if the locator is up but not necessarily reachable from the
-            # receiver's point of view.  See also Section 6.4 for another way
-            # the R-bit may be used.
-            if not isinstance(self.reachable, bool):
-                raise ValueError('Reachable flag must be a boolean')
+        # R: set when the sender of a Map-Reply has a route to the locator in
+        # the locator data record.  This receiver may find this useful to
+        # know if the locator is up but not necessarily reachable from the
+        # receiver's point of view.  See also Section 6.4 for another way
+        # the R-bit may be used.
+        if not isinstance(self.reachable, bool):
+            raise ValueError('Reachable flag must be a boolean')
 
-            # Locator:  an IPv4 or IPv6 address (as encoded by the 'Loc-AFI' field)
-            # assigned to an ETR.  Note that the destination RLOC address MAY be
-            # an anycast address.  A source RLOC can be an anycast address as
-            # well.  The source or destination RLOC MUST NOT be the broadcast
-            # address (255.255.255.255 or any subnet broadcast address known to
-            # the router), and MUST NOT be a link-local multicast address.  The
-            # source RLOC MUST NOT be a multicast address.  The destination RLOC
-            # SHOULD be a multicast address if it is being mapped from a
-            # multicast destination EID.
+        # Locator:  an IPv4 or IPv6 address (as encoded by the 'Loc-AFI' field)
+        # assigned to an ETR.  Note that the destination RLOC address MAY be
+        # an anycast address.  A source RLOC can be an anycast address as
+        # well.  The source or destination RLOC MUST NOT be the broadcast
+        # address (255.255.255.255 or any subnet broadcast address known to
+        # the router), and MUST NOT be a link-local multicast address.  The
+        # source RLOC MUST NOT be a multicast address.  The destination RLOC
+        # SHOULD be a multicast address if it is being mapped from a
+        # multicast destination EID.
 
-            if isinstance(self.address, (IPv4Address, IPv6Address)):
-                addresses = [self.address]
-            elif isinstance(self.address, LCAFAddress):
-                addresses = self.address.get_addresses()
+        if isinstance(self.address, (IPv4Address, IPv6Address)):
+            addresses = [self.address]
+        elif isinstance(self.address, LCAFAddress):
+            addresses = self.address.get_addresses()
+        else:
+            raise ValueError('Locator must be an (LCAF) IPv4 or IPv6 address')
+
+        for address in addresses:
+            if isinstance(self.address, IPv4Address):
+                if address == IPv4Address(u'255.255.255.255'):
+                    raise ValueError('Locator must not be the broadcast '
+                                     'address')
+
+                if address in IPv4Network(u'224.0.0.0/24'):
+                    raise ValueError('Locator must not be a link-local '
+                                     'multicast address')
+
+            elif isinstance(self.address, IPv6Address):
+                if address in IPv6Network(u'ff02::/16') \
+                or address in IPv6Network(u'ff12::/16'):
+                    raise ValueError('Locator must not be a link-local '
+                                     'multicast address')
+
             else:
-                raise ValueError('Locator must be an (LCAF) IPv4 or IPv6 address')
-
-            for address in addresses:
-                if isinstance(self.address, IPv4Address):
-                    if address == IPv4Address(u'255.255.255.255'):
-                        raise ValueError('Locator must not be the broadcast '
-                                         'address')
-
-                    if address in IPv4Network(u'224.0.0.0/24'):
-                        raise ValueError('Locator must not be a link-local '
-                                         'multicast address')
-
-                elif isinstance(self.address, IPv6Address):
-                    if address in IPv6Network(u'ff02::/16') \
-                    or address in IPv6Network(u'ff12::/16'):
-                        raise ValueError('Locator must not be a link-local '
-                                         'multicast address')
-
-                else:
-                    raise ValueError('Locator must be an IPv4 or IPv6 address')
+                raise ValueError('Locator must be an IPv4 or IPv6 address')
 
     @classmethod
     def from_bytes(cls, bitstream):
@@ -211,24 +256,37 @@ class LocatorRecord(object):
         # Verify that properties make sense
         self.sanitize()
 
-        with self.lock:
-            # Start with the priorities and weights
-            bitstream = BitArray('uint:8=%d, uint:8=%d, uint:8=%d, '
-                                 'uint:8=%d' % (self.priority,
-                                                self.weight,
-                                                self.m_priority,
-                                                self.m_weight))
+        # Start with the priorities and weights
+        bitstream = BitArray('uint:8=%d, uint:8=%d, uint:8=%d, '
+                             'uint:8=%d' % (self.priority,
+                                            self.weight,
+                                            self.m_priority,
+                                            self.m_weight))
 
-            # Add padding
-            bitstream += self._reserved1
+        # Add padding
+        bitstream += self._reserved1
 
-            # Add the flags
-            bitstream += BitArray('bool=%d, bool=%d, bool=%d'
-                                  % (self.local,
-                                     self.probed_locator,
-                                     self.reachable))
+        # Add the flags
+        bitstream += BitArray('bool=%d, bool=%d, bool=%d'
+                              % (self.local,
+                                 self.probed_locator,
+                                 self.reachable))
 
-            # Add the locator
-            bitstream += get_bitstream_for_afi_address(self.address)
+        # Add the locator
+        bitstream += get_bitstream_for_afi_address(self.address)
 
-            return bitstream
+        return bitstream
+
+    def update_address(self):
+        if isinstance(self.address, AutoAddress):
+            old_addr_int = int(self.address)
+            old_addr_str = unicode(self.address)
+            self.address.update_address()
+
+            if old_addr_int != int(self.address):
+                if old_addr_int == 0:
+                    logger.info(u"Locator activated with address {0}".format(self.address))
+                elif int(self.address) == 0:
+                    logger.info(u"Locator with address {0} de-activated".format(old_addr_str))
+                else:
+                    logger.info(u"Locator with address {0} changed to {1}".format(old_addr_str, self.address))
