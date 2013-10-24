@@ -8,6 +8,13 @@ from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network, \
     ip_network
 
 
+# Constants
+Empty = 0
+IPv4 = 1
+IPv6 = 2
+LCAF = 16387
+
+
 def read_afi_address_from_bitstream(bitstream, prefix_len=None):
     '''
     This function decodes an AFI address from a readable bitstream:
@@ -40,14 +47,14 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
 
     # Read the source EID
     afi = bitstream.read('uint:16')
-    if afi == 0:
+    if afi == Empty:
         # No address
         if prefix_len:
             raise ValueError('Empty AFI addresses can not have prefix_len')
 
         return None
 
-    elif afi == 1:
+    elif afi == IPv4:
         # IPv4 address
         address_int = bitstream.read('uint:32')
         address = IPv4Address(address_int)
@@ -58,7 +65,7 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
                 raise ValueError("invalid prefix length %s for %r"
                                  % (prefix_len, address))
 
-    elif afi == 2:
+    elif afi == IPv6:
         # IPv6 address
         address_int = bitstream.read('uint:128')
         address = IPv6Address(address_int)
@@ -69,7 +76,7 @@ def read_afi_address_from_bitstream(bitstream, prefix_len=None):
                 raise ValueError("invalid prefix length %s for %r"
                                  % (prefix_len, address))
 
-    elif afi == 16387:
+    elif afi == LCAF:
         from pylisp.utils.lcaf import LCAFAddress
         address = LCAFAddress.from_bytes(bitstream, prefix_len)
 
