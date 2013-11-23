@@ -24,7 +24,7 @@ source_port = random.choice(range(30000, 40000))
 # Build the map request
 nonce = ''.join([chr(random.choice(xrange(256))) for i in range(8)])
 
-d_addrs = socket.getaddrinfo('mr.lispnet.net', 4342, 0, 0, socket.SOL_UDP)
+d_addrs = socket.getaddrinfo('ms1.lispnet.net', 4342, 0, 0, socket.SOL_UDP)
 for d_family, d_socktype, d_proto, d_canonname, d_sockaddr in d_addrs:
     destination = ip_address(unicode(d_sockaddr[0]))
     print 'Try %s' % destination
