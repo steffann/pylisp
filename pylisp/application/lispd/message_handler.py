@@ -7,8 +7,8 @@ Created on 15 jan. 2013
 from pylisp.application.lispd.address_tree.ddt_referral_node import handle_ddt_map_request
 from pylisp.application.lispd.address_tree.etr_node import ETRNode
 from pylisp.application.lispd.utils.prefix import determine_instance_id_and_afi, resolve, resolve_path
-from pylisp.packet.lisp.control import (EncapsulatedControlMessage, MapNotifyMessage, MapReferralMessage,
-    MapRegisterMessage, MapReplyMessage, MapRequestMessage)
+from pylisp.packet.lisp.control import EncapsulatedControlMessage, MapNotifyMessage, MapReferralMessage, \
+    MapRegisterMessage, MapReplyMessage, MapRequestMessage
 from pylisp.packet.lisp.control.info_message import InfoMessage
 import logging
 
@@ -78,10 +78,6 @@ def handle_map_referral(received_message, control_plane_sockets, data_plane_sock
     pass
 
 
-def handle_enc_map_request(received_message, control_plane_sockets, data_plane_sockets):
-    pass
-
-
 def handle_map_notify(received_message, control_plane_sockets, data_plane_sockets):
     map_notify = received_message.message
     for record in map_notify.records:
@@ -142,3 +138,7 @@ def handle_map_request(received_message, control_plane_sockets, data_plane_socke
         return
 
     nodes[0].handle_map_request(received_message, eid_prefix, control_plane_sockets, data_plane_sockets)
+
+
+def handle_enc_map_request(received_message, control_plane_sockets, data_plane_sockets):
+    pass

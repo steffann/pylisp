@@ -21,12 +21,12 @@ else:
     query_source = IPv6Address(u'2a00:8640:1:0:224:36ff:feef:1d89')
     query_source = IPv6Address(u'::')
 
-source_port = 14342
+source_port = 4342
 
 # Build the map request
 nonce = ''.join([chr(random.choice(xrange(256))) for i in range(8)])
 
-d_addrs = socket.getaddrinfo('37.77.56.75', 4342, 0, 0, socket.SOL_UDP)
+d_addrs = socket.getaddrinfo('ms1.lispnet.net', 4342, 0, 0, socket.SOL_UDP)
 for d_family, d_socktype, d_proto, d_canonname, d_sockaddr in d_addrs:
     destination = ip_address(unicode(d_sockaddr[0]))
 
