@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from ipaddress import ip_address, ip_network, IPv4Network, IPv6Network
-from pylisp.application.lispd.address_tree.authoritative_container_node import AuthoritativeContainerNode
+from pylisp.application.lispd.address_tree.authoritative_container_node import AuthContainerNode
 from pylisp.application.lispd.address_tree.container_node import ContainerNode
 from pylisp.application.lispd.address_tree.ddt_referral_node import DDTReferralNode
 import logging
@@ -24,9 +24,9 @@ def add_delegation(instances, instance_id, afi, prefix, address):
 
     if afi not in instances[instance_id]:
         if afi == 1:
-            instances[instance_id][afi] = AuthoritativeContainerNode(u'0.0.0.0/0')
+            instances[instance_id][afi] = AuthContainerNode(u'0.0.0.0/0')
         elif afi == 2:
-            instances[instance_id][afi] = AuthoritativeContainerNode(u'::/0')
+            instances[instance_id][afi] = AuthContainerNode(u'::/0')
         else:
             raise ValueError('Unknown AFI {0}'.format(afi))
 

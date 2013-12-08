@@ -5,49 +5,47 @@ Created on 11 jan. 2013
 @author: sander
 '''
 
-from IPy import IP
-from pylisp.packet.ip import IPv4Packet, IPv6Packet, UDPMessage
-from pylisp.packet.lisp.control import EncapsulatedControlMessage, \
-    MapRequestMessage, ControlMessage, MapRegisterMessage
-from pylisp.packet.lisp.control.constants import KEY_ID_HMAC_SHA_256_128
+from ipaddress import ip_address, ip_network
+from pylisp.packet.lisp.control.base import ControlMessage
+from pylisp.packet.lisp.control.constants import KEY_ID_HMAC_SHA_1_96
 from pylisp.packet.lisp.control.locator_record import LocatorRecord
+from pylisp.packet.lisp.control.map_register import MapRegisterMessage
 from pylisp.packet.lisp.control.map_register_record import MapRegisterRecord
 import random
 import socket
-import sys
 
 my_name = socket.getfqdn()
-source_port = random.choice(range(30000, 40000))
+source_port = 4342
 
 # Build the map request
 nonce = ''.join([chr(random.choice(xrange(256))) for i in range(8)])
 
-d_addrs = socket.getaddrinfo('127.0.0.1', 4342, 0, 0, socket.SOL_UDP)
-# d_addrs = socket.getaddrinfo('mr.lispnet.net', 4342, 0, 0, socket.SOL_UDP)
+# d_addrs = socket.getaddrinfo('127.0.0.1', 4342, 0, 0, socket.SOL_UDP)
+d_addrs = socket.getaddrinfo('ms1.lispnet.net', 4342, 0, 0, socket.SOL_UDP)
 for d_family, d_socktype, d_proto, d_canonname, d_sockaddr in d_addrs:
-    destination = IP(d_sockaddr[0])
+    destination = ip_address(unicode(d_sockaddr[0]))
     print 'Try %s' % destination
 
     s_addrs = socket.getaddrinfo(my_name, source_port, d_family, d_socktype, d_proto)
     for s_family, s_socktype, s_proto, s_canonname, s_sockaddr in s_addrs:
-        source = IP(s_sockaddr[0])
+        source = ip_address(unicode(s_sockaddr[0]))
         print '- From %s' % source
 
         # Build packet
         locator = LocatorRecord(priority=1, weight=100, local=True,
-                                reachable=True, locator=IP('127.0.0.1'))
+                                reachable=True, address=ip_address(u'127.0.0.1'))
         record = MapRegisterRecord(ttl=1440,
                                    action=MapRegisterRecord.ACT_NO_ACTION,
                                    authoritative=True,
                                    map_version=0,
-                                   eid_prefix=IP('37.77.62.0/25'),
+                                   eid_prefix=ip_network(u'37.77.62.0/24'),
                                    locator_records=[locator])
-        reg = MapRegisterMessage(proxy_map_reply=False,
+        reg = MapRegisterMessage(proxy_map_reply=True,
                                  want_map_notify=False,
                                  nonce=nonce,
-                                 key_id=KEY_ID_HMAC_SHA_256_128,
+                                 key_id=KEY_ID_HMAC_SHA_1_96,
                                  records=[record])
-        reg.insert_authentication_data('BlaBlaBla')
+        reg.insert_authentication_data('testje')
 
         try:
             sock = socket.socket(d_family, d_socktype, d_proto)
