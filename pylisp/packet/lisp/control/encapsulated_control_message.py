@@ -16,7 +16,7 @@ class EncapsulatedControlMessage(ControlMessage):
     # Class property: which message type do we represent?
     message_type = 8
 
-    def __init__(self, security=False, ddt_originated=False, payload=''):
+    def __init__(self, security=False, ddt_originated=False, for_rtr=False, relayed_by_rtr=False, payload=''):
         '''
         Constructor
         '''
@@ -25,6 +25,8 @@ class EncapsulatedControlMessage(ControlMessage):
         # Set defaults
         self.security = security
         self.ddt_originated = ddt_originated
+        self.for_rtr = for_rtr
+        self.relayed_by_rtr = relayed_by_rtr
         self.payload = payload
 
         # Store space for reserved bits
@@ -53,6 +55,19 @@ class EncapsulatedControlMessage(ControlMessage):
         # messages as appropriate.
         if not isinstance(self.ddt_originated, bool):
             raise ValueError('DDT originated flag must be a boolean')
+
+        # The 6th bit in the ECM LISP header is allocated as the "R"
+        # bit.  The R bit indicates that the encapsulated Map-Register is
+        # to be processed by an RTR.
+        if not isinstance(self.for_rtr, bool):
+            raise ValueError('For-RTR flag must be a boolean')
+
+        # The 7th bit in the ECM header is allocated as the "N" bit.  The
+        # N bit indicates that this Map-Register is being relayed by an
+        # RTR.  When an RTR relays the ECM-ed Map-Register to a Map-Server,
+        # the N bit must be set to 1.
+        if not isinstance(self.relayed_by_rtr, bool):
+            raise ValueError('Relayed-by-RTR flag must be a boolean')
 
         # LCM:   The format is one of the control message formats described in
         # this section.  At this time, only Map-Request messages are allowed

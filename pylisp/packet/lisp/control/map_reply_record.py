@@ -48,7 +48,7 @@ class MapReplyRecord(object):
         self.authoritative = authoritative
         self.map_version = map_version
         self.eid_prefix = eid_prefix
-        self.locator_records = locator_records or []
+        self.locator_records = list(locator_records or [])
 
         # Store space for reserved bits
         self._reserved1 = BitArray(12 + 4)

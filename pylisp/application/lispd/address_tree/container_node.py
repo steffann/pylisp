@@ -20,6 +20,12 @@ class ContainerNode(AbstractNode):
         if children:
             self.update(children)
 
+    def set_sockets(self, control_plane_sockets, data_plane_sockets):
+        super(ContainerNode, self).set_sockets(control_plane_sockets, data_plane_sockets)
+
+        for child in self.children:
+            child.set_sockets(control_plane_sockets, data_plane_sockets)
+
     def __repr__(self):
         return '%s(%r, %r)' % (self.__class__.__name__, self.prefix,
                                self.children)
@@ -34,17 +40,16 @@ class ContainerNode(AbstractNode):
         '''
         Resolve the given address in this tree branch
         '''
-        with self.lock:
-            match = self.find_one(address)
-            if not match:
-                return [self]
+        match = self.find_one(address)
+        if not match:
+            return [self]
 
-            # Go further up the tree if possible
-            if isinstance(match, ContainerNode):
-                return match.resolve_path(address) + [self]
+        # Go further up the tree if possible
+        if isinstance(match, ContainerNode):
+            return match.resolve_path(address) + [self]
 
-            # This is as far as we go
-            return [match, self]
+        # This is as far as we go
+        return [match, self]
 
     def resolve(self, address):
         return self.resolve_path(address)[0]
@@ -98,11 +103,10 @@ class ContainerNode(AbstractNode):
                                         % prefix)
 
         # Find all matching existing prefixes and return them in a set
-        with self.lock:
-            matches = set()
-            for child in self.children:
-                if prefix.overlaps(child.prefix):
-                    matches.add(child)
+        matches = set()
+        for child in self.children:
+            if prefix.overlaps(child.prefix):
+                matches.add(child)
 
         return matches
 
@@ -124,52 +128,40 @@ class ContainerNode(AbstractNode):
                                  'prefixes' % child.prefix)
 
         # Add the new child
-        with self.lock:
-            self.children.add(child)
+        self.children.add(child)
 
     def clear(self):
-        with self.lock:
-            self.children = set()
+        self.children = set()
 
     def __contains__(self, child):
-        with self.lock:
-            # If a node is given then directly look for it
-            if isinstance(child, AbstractNode):
-                return child in self.children
+        # If a node is given then directly look for it
+        if isinstance(child, AbstractNode):
+            return child in self.children
 
-            # Also allow to find a node by network
-            match = self.find_exact(child)
-            return bool(match)
+        # Also allow to find a node by network
+        match = self.find_exact(child)
+        return bool(match)
 
     def copy(self):
         return self.__class__(self.prefix, self.children)
 
     def discard(self, child):
-        with self.lock:
-            # If a node is given then directly discard it
-            if isinstance(child, AbstractNode):
-                self.children.discard(child)
-                return
+        # If a node is given then directly discard it
+        if isinstance(child, AbstractNode):
+            self.children.discard(child)
+            return
 
-            # Also allow to discard a node by network
-            match = self.find_exact(child)
-            if match:
-                self.children.discard(match)
+        # Also allow to discard a node by network
+        match = self.find_exact(child)
+        if match:
+            self.children.discard(match)
 
     def remove(self, child):
-        with self.lock:
-            orig_len = len(self)
-            self.discard(child)
-            if len(self) != orig_len:
-                raise KeyError(child)
+        orig_len = len(self)
+        self.discard(child)
+        if len(self) != orig_len:
+            raise KeyError(child)
 
     def update(self, children):
-        with self.lock:
-            for child in children:
-                self.add(child)
-
-    def process(self, control_plane_sockets, data_plane_sockets):
-        super(ContainerNode, self).process(control_plane_sockets, data_plane_sockets)
-        with self.lock:
-            for child in self.children:
-                child.process(control_plane_sockets, data_plane_sockets)
+        for child in children:
+            self.add(child)

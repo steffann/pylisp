@@ -270,10 +270,6 @@ class MapRequestMessage(ControlMessage):
         if map_data_present:
             packet.map_reply = MapReplyRecord.from_bytes(bitstream)
 
-        # There should be no remaining bits
-        if bitstream.pos != bitstream.len:
-            raise ValueError('Bits remaining after processing packet')
-
         # Verify that the properties make sense
         packet.sanitize()
 

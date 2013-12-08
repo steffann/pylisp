@@ -7,6 +7,7 @@ from multiprocessing.dummy import Lock
 from pylisp.packet.lisp.control import EncapsulatedControlMessage, ControlMessage
 from pylisp.utils.represent import represent
 import logging
+import sys
 
 
 # Get the logger
@@ -24,7 +25,11 @@ class ReceivedMessage(object):
         else:
             # Get the next number
             with ReceivedMessage.counter_lock:
-                ReceivedMessage.counter += 1
+                if ReceivedMessage.counter == sys.maxint:
+                    logger.info("ReceivedMessage IDs wrapped back to 1")
+                    ReceivedMessage.counter = 1
+                else:
+                    ReceivedMessage.counter += 1
                 self.message_nr = ReceivedMessage.counter
 
         self.source = source
@@ -34,7 +39,7 @@ class ReceivedMessage(object):
 
         # Sanity check
         if not isinstance(self.message, ControlMessage):
-            raise ValueError("Non-LISP message detected: %r" % self.message)
+            raise ValueError("Non-LISP message detected: {0!r}".format(self.message))
 
         # Decapsulate ECM, we need this data often
         if isinstance(self.message, EncapsulatedControlMessage):
