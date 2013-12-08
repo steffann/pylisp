@@ -1,5 +1,6 @@
 from ipaddress import IPv4Address
-from pylisp.application.lispd.address_tree import ContainerNode, ETRNode
+from pylisp.application.lispd.address_tree.container_node import ContainerNode
+from pylisp.application.lispd.address_tree.etr_node import ETRNode
 from pylisp.application.lispd.map_server_registration import MapServerRegistration
 from pylisp.packet.lisp.control import LocatorRecord, KEY_ID_HMAC_SHA_1_96
 from pylisp.utils.auto_addresses import AutoIPv4Address, AutoIPv6Address

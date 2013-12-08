@@ -1,10 +1,12 @@
 from ipaddress import IPv4Address
-from pylisp.application.lispd.address_tree import ContainerNode, ETRNode
+from pylisp.application.lispd.address_tree.container_node import ContainerNode
+from pylisp.application.lispd.address_tree.etr_node import ETRNode
 from pylisp.application.lispd.map_server_registration import MapServerRegistration
 from pylisp.packet.lisp.control import LocatorRecord, KEY_ID_HMAC_SHA_1_96
-from pylisp.utils.auto_addresses import AutoIPv4Address, AutoIPv6Address
+from pylisp.utils.auto_addresses import get_ipv4_address, get_ipv6_address
 
-LISTEN_ON = [AutoIPv4Address('eth0'), AutoIPv6Address('eth0')]
+LISTEN_ON = [get_ipv4_address('eth0'),
+             get_ipv6_address('eth0')]
 
 # # Load the DDT-Root
 # from pylisp.application.lispd.utils.ddt_root_loader import load_ddt_root
@@ -12,13 +14,13 @@ LISTEN_ON = [AutoIPv4Address('eth0'), AutoIPv6Address('eth0')]
 #
 # INSTANCES = load_ddt_root(os.path.join(os.path.dirname(__file__), 'ddt_root'))
 
-locators = [LocatorRecord(priority=1, weight=100, address=AutoIPv4Address('eth0')),
-            LocatorRecord(priority=1, weight=100, address=AutoIPv6Address('eth0'))]
+locators = [LocatorRecord(priority=1, weight=100, address=get_ipv4_address('eth0')),
+            LocatorRecord(priority=1, weight=100, address=get_ipv6_address('eth0'))]
 
 key_id = KEY_ID_HMAC_SHA_1_96
 key = 'devdevdev'
-map_servers = [MapServerRegistration(u'83.247.10.218', key_id=key_id, key=key),
-               MapServerRegistration(u'87.195.109.18', key_id=key_id, key=key)]
+map_servers = [MapServerRegistration(u'83.247.10.218', key_id=key_id, key=key, proxy_map_reply=True, use_rtr=False),
+               MapServerRegistration(u'87.195.109.18', key_id=key_id, key=key, proxy_map_reply=True, use_rtr=True)]
 
 INSTANCES = {
     0: {

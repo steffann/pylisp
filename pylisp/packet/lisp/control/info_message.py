@@ -211,10 +211,6 @@ class InfoMessage(ControlMessage):
         # Read the reply
         packet.reply = read_afi_address_from_bitstream(bitstream)
 
-        # There should be no remaining bits
-        if bitstream.pos != bitstream.len:
-            raise ValueError('Bits remaining after processing packet')
-
         # Verify that the properties make sense
         packet.sanitize()
 

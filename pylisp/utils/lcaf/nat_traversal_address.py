@@ -4,9 +4,7 @@ Created on 12 jan. 2013
 @author: sander
 '''
 from bitstring import BitArray
-from ipaddress import ip_network
-from pylisp.utils.afi import read_afi_address_from_bitstream, \
-    get_bitstream_for_afi_address
+from pylisp.utils.afi import read_afi_address_from_bitstream, get_bitstream_for_afi_address
 from pylisp.utils.lcaf import type_registry
 from pylisp.utils.lcaf.base import LCAFAddress
 
@@ -25,7 +23,10 @@ class LCAFNATTraversalAddress(LCAFAddress):
         self.rtr_rlocs = rtr_rlocs or []
 
     def __unicode__(self):
-        return u'[{0},{1}]{2}'.format(self.longitude, self.latitude, self.address)
+        return u"<MS:[{0}]:{1} Private:[{2}] Public:[{3}]:{4} RTRs:{5}>".format(self.map_server_rloc, self.map_server_port,
+                                                                                self.private_etr_rloc,
+                                                                                self.global_etr_rloc, self.etr_port,
+                                                                                self.rtr_rlocs)
 
     def get_addresses(self):
         return self.rtr_rlocs
