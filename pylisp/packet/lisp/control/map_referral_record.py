@@ -257,10 +257,10 @@ class MapReferralRecord(object):
                                                   address=self.eid_prefix)
 
         # Check locator records
-        # The local and probed_locator bits aren't used in this context
+        # The probed_locator bits aren't used in this context
         for locator_record in self.locator_records:
             if not isinstance(locator_record, LocatorRecord) \
-            or locator_record.local or locator_record.probed_locator:
+            or locator_record.probed_locator:
                 raise ValueError('Invalid Locator record')
 
             locator_record.sanitize()

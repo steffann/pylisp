@@ -6,10 +6,16 @@ Created on 15 jan. 2013
 
 from pylisp.application.lispd.address_tree.ddt_referral_node import handle_ddt_map_request
 from pylisp.application.lispd.address_tree.etr_node import ETRNode
+from pylisp.application.lispd.address_tree.map_server_node import MapServerNode
 from pylisp.application.lispd.utils.prefix import determine_instance_id_and_afi, resolve, resolve_path
-from pylisp.packet.lisp.control import (EncapsulatedControlMessage, MapNotifyMessage, MapReferralMessage,
-    MapRegisterMessage, MapReplyMessage, MapRequestMessage)
+from pylisp.packet.lisp.control.encapsulated_control_message import EncapsulatedControlMessage
 from pylisp.packet.lisp.control.info_message import InfoMessage
+from pylisp.packet.lisp.control.map_notify import MapNotifyMessage
+from pylisp.packet.lisp.control.map_referral import MapReferralMessage
+from pylisp.packet.lisp.control.map_register import MapRegisterMessage
+from pylisp.packet.lisp.control.map_register_record import MapRegisterRecord
+from pylisp.packet.lisp.control.map_reply import MapReplyMessage
+from pylisp.packet.lisp.control.map_request import MapRequestMessage
 import logging
 
 
@@ -71,30 +77,43 @@ def handle_map_reply(received_message, control_plane_sockets, data_plane_sockets
 
 
 def handle_map_register(received_message, control_plane_sockets, data_plane_sockets):
-    pass
+    map_register = received_message.message
+    assert isinstance(map_register, MapRegisterMessage)
+
+    for record in map_register.records:
+        assert isinstance(record, MapRegisterRecord)
+
+        # Look up the address in the tree
+        instance_id, afi, prefix = determine_instance_id_and_afi(record.eid_prefix)
+        tree_node = resolve(instance_id, afi, prefix)
+
+        if isinstance(tree_node, MapServerNode):
+            tree_node.handle_map_register_record(received_message, record, control_plane_sockets, data_plane_sockets)
+        else:
+            logger.warn(u"Received a Map-Register message for {0}"
+                         ", but we not a MapServer for that EID space".format(prefix))
 
 
 def handle_map_referral(received_message, control_plane_sockets, data_plane_sockets):
     pass
 
 
-def handle_enc_map_request(received_message, control_plane_sockets, data_plane_sockets):
-    pass
-
-
 def handle_map_notify(received_message, control_plane_sockets, data_plane_sockets):
     map_notify = received_message.message
+    assert isinstance(map_notify, MapNotifyMessage)
+
     for record in map_notify.records:
+        assert isinstance(record, MapRegisterRecord)
+
         # Look up the address in the tree
-        prefix = record.eid_prefix
-        instance_id, afi, prefix = determine_instance_id_and_afi(prefix)
+        instance_id, afi, prefix = determine_instance_id_and_afi(record.eid_prefix)
         tree_node = resolve(instance_id, afi, prefix)
 
         if isinstance(tree_node, ETRNode):
             tree_node.handle_map_notify_record(received_message, record, control_plane_sockets, data_plane_sockets)
         else:
-            logger.warn(u"Received a Map-Notify for {0}"
-                        ", but we not a MapServerClient for that EID space".format(prefix))
+            logger.warn(u"Received a Map-Notify message for {0}"
+                         ", but we not a MapServerClient for that EID space".format(prefix))
 
 
 def handle_info_message(received_message, control_plane_sockets, data_plane_sockets):
@@ -142,3 +161,7 @@ def handle_map_request(received_message, control_plane_sockets, data_plane_socke
         return
 
     nodes[0].handle_map_request(received_message, eid_prefix, control_plane_sockets, data_plane_sockets)
+
+
+def handle_enc_map_request(received_message, control_plane_sockets, data_plane_sockets):
+    pass
