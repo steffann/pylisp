@@ -19,10 +19,9 @@ class MapRegisterMessage(ControlMessage):
     # Class property: which message type do we represent?
     message_type = 3
 
-    def __init__(self, proxy_map_reply=False, for_rtr=False,
-                 want_map_notify=False,
-                 nonce='\x00\x00\x00\x00\x00\x00\x00\x00', key_id=0,
-                 authentication_data='', records=None, xtr_id=0, site_id=0):
+    def __init__(self, proxy_map_reply=False, for_rtr=False, want_map_notify=False,
+                 key_id=0, authentication_data='',
+                 records=None, xtr_id=0, site_id=0):
         '''
         Constructor
         '''
@@ -32,7 +31,7 @@ class MapRegisterMessage(ControlMessage):
         self.proxy_map_reply = proxy_map_reply
         self.for_rtr = for_rtr
         self.want_map_notify = want_map_notify
-        self.nonce = nonce
+        self.nonce = '\x00\x00\x00\x00\x00\x00\x00\x00'
         self.key_id = key_id
         self.authentication_data = authentication_data
         self.records = records or []
@@ -119,8 +118,8 @@ class MapRegisterMessage(ControlMessage):
         # messages.  Since the Map-Register message is authenticated, the
         # nonce field is not currently used for any security function but
         # may be in the future as part of an anti-replay solution.
-        if len(bytes(self.nonce)) != 8:
-            raise ValueError('Invalid nonce')
+        if self.nonce != '\x00\x00\x00\x00\x00\x00\x00\x00':
+            raise ValueError('Invalid nonce (must be 0 for Map-Register)')
 
         # Key ID:  A configured ID to find the configured Message
         # Authentication Code (MAC) algorithm and key value used for the

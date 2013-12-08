@@ -139,7 +139,7 @@ def handle_ddt_map_request(received_message, control_plane_sockets, data_plane_s
     more_specific_nodes = []
     for tree_node in tree_nodes[::-1]:
         # Mark that we are authoritative for this request
-        if isinstance(tree_node, (AuthContainerNode, MapServerNode)):
+        if not auth_node and isinstance(tree_node, (AuthContainerNode, MapServerNode)):
             auth_node = tree_node
 
         # Do we already have a handler?
@@ -175,7 +175,7 @@ def handle_ddt_map_request(received_message, control_plane_sockets, data_plane_s
         return
 
     elif isinstance(tree_node, MapServerNode):
-        # Handle this as a Map-Server
+        # Handle this as a DDT Map-Server
 
         # Let he MapServerNode send the Map-Request to the ETR or answer as a proxy
         handled = handling_node.handle_map_request(received_message, control_plane_sockets, data_plane_sockets)
