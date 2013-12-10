@@ -18,6 +18,7 @@ from pylisp.packet.ip.ipv6 import IPv6Packet
 from pylisp.packet.ip.udp import UDPMessage
 from pylisp.packet.lisp.control import ControlMessage
 from pylisp.packet.lisp.data import DataPacket
+from pylisp.utils import auto_addresses
 from pylisp.utils.auto_socket import AutoUDPSocket
 import fcntl
 import logging
@@ -35,11 +36,6 @@ except ImportError:
 
 
 logger = logging.root
-
-
-# Basic raw sockets
-raw_socket_ipv4 = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
-raw_socket_ipv6 = socket.socket(socket.AF_INET6, socket.SOCK_RAW, socket.IPPROTO_RAW)
 
 
 def handle_signal(sig, fd, func=lambda x, y: False):
@@ -73,8 +69,9 @@ def create_sockets(config):
     control_plane_sockets = []
     data_plane_sockets = []
     for address in config.LISTEN_ON:
-        # Socket on lisp-data port
-        data_plane_sockets.append(AutoUDPSocket(address, 4341))
+        if config.PROCESS_DATA:
+            # Socket on lisp-data port
+            data_plane_sockets.append(AutoUDPSocket(address, 4341))
 
         # Socket on lisp-control port
         control_plane_sockets.append(AutoUDPSocket(address, 4342))
@@ -142,11 +139,17 @@ def handle_data_message(fd_sock, addr, message, control_plane_sockets, data_plan
         handle_control_message(fd_sock, addr, control_message, control_plane_sockets, data_plane_sockets)
         return
 
+    # Data: make sure we have raw sockets
+
     data = message.payload.to_bytes()
     if isinstance(message.payload, IPv4Packet):
-        raw_socket = raw_socket_ipv4
+        if not hasattr(handle_data_message, 'raw_socket_ipv4'):
+            handle_data_message.raw_socket_ipv4 = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
+        raw_socket = handle_data_message.raw_socket_ipv4
     else:
-        raw_socket = raw_socket_ipv6
+        if not hasattr(handle_data_message, 'raw_socket_ipv6'):
+            handle_data_message.raw_socket_ipv6 = socket.socket(socket.AF_INET6, socket.SOCK_RAW, socket.IPPROTO_RAW)
+        raw_socket = handle_data_message.raw_socket_ipv6
 
     # TODO: fix TTL
 
@@ -157,28 +160,6 @@ def handle_data_message(fd_sock, addr, message, control_plane_sockets, data_plan
         logger.error(u"Could not send decapsulated packet {0!r}".format(message.payload))
     else:
         logger.debug(u"Sent decapsulated packet of {0} bytes".format(sent))
-
-
-# def run_maintenance(control_plane_sockets, data_plane_sockets, force=False):
-#     for instance_id in settings.config.INSTANCES:
-#         for afi in settings.config.INSTANCES[instance_id]:
-#             instance = settings.config.INSTANCES[instance_id][afi]
-#             instance.process(control_plane_sockets=control_plane_sockets,
-#                              data_plane_sockets=data_plane_sockets,
-#                              force=force)
-
-
-# def check_addresses(control_plane_sockets, data_plane_sockets):
-#     # Check the addresses of all sockets
-#     for sock in control_plane_sockets + data_plane_sockets:
-#         sock.rebind()
-#
-#     for instance_id in settings.config.INSTANCES:
-#         for afi in settings.config.INSTANCES[instance_id]:
-#             instance = settings.config.INSTANCES[instance_id][afi]
-#             instance.update_addresses()
-#
-#     run_maintenance(control_plane_sockets, data_plane_sockets, force=True)
 
 
 def main(argv=None):
@@ -237,39 +218,40 @@ def main(argv=None):
         # Determine local sockets
         control_plane_sockets, data_plane_sockets = create_sockets(settings.config)
 
-        if settings.config.PETR and (settings.config.NFQUEUE_IPV4 is None or settings.config.NFQUEUE_IPV6 is None):
-            logger.error("PETR configured but not NFQUEUE_IPV4 and NFQUEUE_IPV6")
-            return 2
-
-        # Do we use nfqueue?
-        if settings.config.NFQUEUE_IPV4 is not None or settings.config.NFQUEUE_IPV6 is not None:
-            if not nfqueue:
-                logger.error("Python nfqueue module not found")
+        nfqueues = []
+        if settings.config.PROCESS_DATA:
+            if settings.config.PETR and (settings.config.NFQUEUE_IPV4 is None or settings.config.NFQUEUE_IPV6 is None):
+                logger.error("PETR configured but not NFQUEUE_IPV4 and NFQUEUE_IPV6")
                 return 2
 
-            # An IPv4 queue
-            callback = nfqueue_callback(settings.config, data_plane_sockets)
+            # Do we use nfqueue?
+            if settings.config.NFQUEUE_IPV4 is not None or settings.config.NFQUEUE_IPV6 is not None:
+                if not nfqueue:
+                    logger.error("Python nfqueue module not found")
+                    return 2
 
-            nfqueues = []
-            if settings.config.NFQUEUE_IPV4 is not None:
-                nfqueue_ipv4 = nfqueue.queue()
-                nfqueue_ipv4.set_callback(callback)
-                nfqueue_ipv4.fast_open(settings.config.NFQUEUE_IPV4, socket.AF_INET)
-                nfqueue_ipv4.set_queue_maxlen(5000)
-                nfqueue_ipv4.set_mode(nfqueue.NFQNL_COPY_PACKET)
-                nfqueue_ipv4.fileno = nfqueue_ipv4.get_fd
+                # An IPv4 queue
+                callback = nfqueue_callback(settings.config, data_plane_sockets)
 
-                nfqueues.append(nfqueue_ipv4)
+                if settings.config.NFQUEUE_IPV4 is not None:
+                    nfqueue_ipv4 = nfqueue.queue()
+                    nfqueue_ipv4.set_callback(callback)
+                    nfqueue_ipv4.fast_open(settings.config.NFQUEUE_IPV4, socket.AF_INET)
+                    nfqueue_ipv4.set_queue_maxlen(5000)
+                    nfqueue_ipv4.set_mode(nfqueue.NFQNL_COPY_PACKET)
+                    nfqueue_ipv4.fileno = nfqueue_ipv4.get_fd
 
-            if settings.config.NFQUEUE_IPV6 is not None:
-                nfqueue_ipv6 = nfqueue.queue()
-                nfqueue_ipv6.set_callback(callback)
-                nfqueue_ipv6.fast_open(settings.config.NFQUEUE_IPV6, socket.AF_INET6)
-                nfqueue_ipv6.set_queue_maxlen(5000)
-                nfqueue_ipv6.set_mode(nfqueue.NFQNL_COPY_PACKET)
-                nfqueue_ipv6.fileno = nfqueue_ipv6.get_fd
+                    nfqueues.append(nfqueue_ipv4)
 
-                nfqueues.append(nfqueue_ipv6)
+                if settings.config.NFQUEUE_IPV6 is not None:
+                    nfqueue_ipv6 = nfqueue.queue()
+                    nfqueue_ipv6.set_callback(callback)
+                    nfqueue_ipv6.fast_open(settings.config.NFQUEUE_IPV6, socket.AF_INET6)
+                    nfqueue_ipv6.set_queue_maxlen(5000)
+                    nfqueue_ipv6.set_mode(nfqueue.NFQNL_COPY_PACKET)
+                    nfqueue_ipv6.fileno = nfqueue_ipv6.get_fd
+
+                    nfqueues.append(nfqueue_ipv6)
 
         if not control_plane_sockets:
             logger.error("Not listening on any addresses")
@@ -299,7 +281,7 @@ def main(argv=None):
 
                 try:
                     rlist = []
-                    rlist, dummy, dummy = select.select(active_sockets + nfqueues + [signal_pipe], [], [])
+                    rlist, dummy, dummy = select.select(active_sockets + nfqueues + [signal_pipe], [], [], 5.0)
                 except select.error, e:
                     if e[0] == socket.EINTR:
                         # So we got interrupted, so what?
@@ -341,8 +323,7 @@ def main(argv=None):
 
                         elif sig == signal.SIGHUP:
                             logger.info("Received HUP, checking addresses")
-                            with reexamine_addresses:
-                                reexamine_addresses.notify_all()
+                            auto_addresses.update_addresses()
 
             except:
                 logger.exception("Unexpected exception")
@@ -353,6 +334,9 @@ def main(argv=None):
     except ConfigurationError:
         logger.exception("Configuration error")
         return 1
+    except SystemExit:
+        # All ok, pass it on
+        raise
     except:
         logger.exception("Unexpected exception")
         return 2

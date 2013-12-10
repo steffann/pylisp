@@ -1,7 +1,7 @@
 from ipaddress import IPv4Address
 from pylisp.application.lispd.address_tree.container_node import ContainerNode
 from pylisp.application.lispd.address_tree.etr_node import ETRNode
-from pylisp.application.lispd.map_server_registration import MapServerRegistration
+from pylisp.application.lispd.etr_registration import ETRRegistration
 from pylisp.packet.lisp.control import LocatorRecord, KEY_ID_HMAC_SHA_1_96
 from pylisp.utils.auto_addresses import get_ipv4_address, get_ipv6_address
 
@@ -19,8 +19,8 @@ locators = [LocatorRecord(priority=1, weight=100, address=get_ipv4_address('eth0
 
 key_id = KEY_ID_HMAC_SHA_1_96
 key = 'devdevdev'
-map_servers = [MapServerRegistration(u'83.247.10.218', key_id=key_id, key=key, proxy_map_reply=True, use_rtr=False),
-               MapServerRegistration(u'87.195.109.18', key_id=key_id, key=key, proxy_map_reply=True, use_rtr=True)]
+map_servers = [ETRRegistration(u'83.247.10.218', key_id=key_id, key=key, proxy_map_reply=True, use_rtr=False),
+               ETRRegistration(u'87.195.109.18', key_id=key_id, key=key, proxy_map_reply=True, use_rtr=True)]
 
 INSTANCES = {
     0: {

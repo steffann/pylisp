@@ -6,7 +6,8 @@ Created on 15 jan. 2013
 
 from pylisp.application.lispd.address_tree.ddt_referral_node import handle_ddt_map_request
 from pylisp.application.lispd.address_tree.etr_node import ETRNode
-from pylisp.application.lispd.address_tree.map_server_node import MapServerNode
+from pylisp.application.lispd.address_tree.map_server_node import MapServerNode, MapServerException
+from pylisp.application.lispd.send_message import send_message
 from pylisp.application.lispd.utils.prefix import determine_instance_id_and_afi, resolve, resolve_path
 from pylisp.packet.lisp.control.encapsulated_control_message import EncapsulatedControlMessage
 from pylisp.packet.lisp.control.info_message import InfoMessage
@@ -80,6 +81,8 @@ def handle_map_register(received_message, control_plane_sockets, data_plane_sock
     map_register = received_message.message
     assert isinstance(map_register, MapRegisterMessage)
 
+    processed_records = []
+    saved_key = ''
     for record in map_register.records:
         assert isinstance(record, MapRegisterRecord)
 
@@ -88,10 +91,33 @@ def handle_map_register(received_message, control_plane_sockets, data_plane_sock
         tree_node = resolve(instance_id, afi, prefix)
 
         if isinstance(tree_node, MapServerNode):
-            tree_node.handle_map_register_record(received_message, record, control_plane_sockets, data_plane_sockets)
+            try:
+                tree_node.handle_map_register_record(received_message, record, control_plane_sockets, data_plane_sockets)
+
+                # Record processed: store the record, and keep the authentication key in case we want to send back a notify
+                processed_records.append(record)
+                saved_key = tree_node.key
+            except MapServerException, e:
+                logger.error("MapServerNode could not process record {0}: {1}".format(record, e.message))
         else:
             logger.warn(u"Received a Map-Register message for {0}"
-                         ", but we not a MapServer for that EID space".format(prefix))
+                         ", but we are not a MapServer for that EID space".format(prefix))
+
+    if map_register.want_map_notify \
+    and processed_records:
+        # Notify the sender using the saved key from the MapServerNode
+        notify = MapNotifyMessage(nonce=map_register.nonce,
+                                  key_id=map_register.key_id,
+                                  records=processed_records,
+                                  xtr_id=map_register.xtr_id,
+                                  site_id=map_register.site_id)
+        notify.insert_authentication_data(saved_key)
+
+        # Send the reply over UDP
+        send_message(message=notify,
+                     my_sockets=[received_message.socket],
+                     destinations=[received_message.source[0]],
+                     port=4342)
 
 
 def handle_map_referral(received_message, control_plane_sockets, data_plane_sockets):
@@ -113,7 +139,7 @@ def handle_map_notify(received_message, control_plane_sockets, data_plane_socket
             tree_node.handle_map_notify_record(received_message, record, control_plane_sockets, data_plane_sockets)
         else:
             logger.warn(u"Received a Map-Notify message for {0}"
-                         ", but we not a MapServerClient for that EID space".format(prefix))
+                         ", but we are not a MapServerClient for that EID space".format(prefix))
 
 
 def handle_info_message(received_message, control_plane_sockets, data_plane_sockets):
@@ -132,7 +158,7 @@ def handle_info_message(received_message, control_plane_sockets, data_plane_sock
     if not isinstance(node, ETRNode):
         # Not for us: drop
         logger.warn(u"Ignoring message {0}: Info-Message for prefix {1} in instance {2} "
-                    "for which we are not an ETR".format(received_message.message_nr, eid_prefix, instance_id))
+                     "for which we are not an ETR".format(received_message.message_nr, eid_prefix, instance_id))
         return
 
     node.handle_info_message_reply(received_message, control_plane_sockets, data_plane_sockets)
@@ -151,13 +177,13 @@ def handle_map_request(received_message, control_plane_sockets, data_plane_socke
     nodes = resolve_path(instance_id, afi, eid_prefix)
     if not nodes:
         logger.warn(u"Ignoring message {0}: Map-Request for unknown"
-                    " instance {1} with AFI {2}".format(received_message.message_nr, instance_id, afi))
+                     " instance {1} with AFI {2}".format(received_message.message_nr, instance_id, afi))
         return
 
     if not isinstance(nodes[0], ETRNode):
         # Not for us: drop
         logger.warn(u"Ignoring message {0}: Map-Request for prefix {1} in instance {2} "
-                    "for which we are not an ETR".format(received_message.message_nr, eid_prefix, instance_id))
+                     "for which we are not an ETR".format(received_message.message_nr, eid_prefix, instance_id))
         return
 
     nodes[0].handle_map_request(received_message, eid_prefix, control_plane_sockets, data_plane_sockets)

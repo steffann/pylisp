@@ -6,7 +6,7 @@ Created on 2 jun. 2013
 from ipaddress import ip_address
 from pylisp.application.lispd import settings
 from pylisp.application.lispd.address_tree.base import AbstractNode
-from pylisp.application.lispd.map_server_registration import MapServerRegistration
+from pylisp.application.lispd.etr_registration import ETRRegistration
 from pylisp.application.lispd.send_message import send_message
 from pylisp.packet.ip.ipv4 import IPv4Packet
 from pylisp.packet.ip.ipv6.base import IPv6Packet
@@ -50,18 +50,18 @@ logger = logging.getLogger(__name__)
 
 
 class InfoRequest(object):
-    def __init__(self, eid_prefix, msr, control_plane_sockets):
+    def __init__(self, eid_prefix, etrr, control_plane_sockets):
         # Store input
         self.eid_prefix = eid_prefix
-        self.msr = msr
+        self.etrr = etrr
         self.control_plane_sockets = control_plane_sockets
 
         # Create the InfoRequest
         self.info_request = InfoMessage(nonce=os.urandom(8),
-                                        key_id=self.msr.key_id,
+                                        key_id=self.etrr.key_id,
                                         ttl=1440,
                                         eid_prefix=self.eid_prefix)
-        self.info_request.insert_authentication_data(self.msr.key)
+        self.info_request.insert_authentication_data(self.etrr.key)
 
         # Remember source and destination of the outgoing request
         self.sent_from = None
@@ -76,11 +76,11 @@ class InfoRequest(object):
     def send(self):
         self.sent_from, self.sent_to = send_message(message=self.info_request,
                                                     my_sockets=self.control_plane_sockets,
-                                                    destinations=[self.msr.map_server],
+                                                    destinations=[self.etrr.map_server],
                                                     port=4342)
 
     def set_reply_if_matches(self, source, info_message):
-        if source != self.msr.map_server \
+        if source != self.etrr.map_server \
         or info_message.nonce != self.info_request.nonce:
             # Not for us
             return False
@@ -93,33 +93,33 @@ class InfoRequest(object):
 
 
 class MapRegister(object):
-    def __init__(self, prefix, msr, locators, nat_info, control_plane_sockets, data_plane_sockets, want_map_notify=False):
-        assert isinstance(msr, MapServerRegistration)
+    def __init__(self, prefix, etrr, locators, nat_info, control_plane_sockets, data_plane_sockets, want_map_notify=False):
+        assert isinstance(etrr, ETRRegistration)
 
         # Extract RTRs
         rtrs = nat_info and nat_info.rtr_rlocs or set()
 
         # Store input
         self.prefix = prefix
-        self.msr = msr
+        self.etrr = etrr
         self.nat_info = nat_info
         self.control_plane_sockets = control_plane_sockets
         self.data_plane_sockets = data_plane_sockets
         self.want_map_notify = want_map_notify or bool(rtrs)
 
         # Generate the map-register
-        self.map_register = MapRegisterMessage(proxy_map_reply=self.msr.proxy_map_reply,
+        self.map_register = MapRegisterMessage(proxy_map_reply=self.etrr.proxy_map_reply,
                                                for_rtr=bool(rtrs),
                                                want_map_notify=self.want_map_notify,
                                                nonce=os.urandom(8),
-                                               key_id=self.msr.key_id,
+                                               key_id=self.etrr.key_id,
                                                records=[MapRegisterRecord(ttl=1440,
                                                                           authoritative=True,
                                                                           eid_prefix=self.prefix,
                                                                           locator_records=locators)],
                                                xtr_id=settings.config.XTR_ID,
                                                site_id=settings.config.SITE_ID)
-        self.map_register.insert_authentication_data(self.msr.key)
+        self.map_register.insert_authentication_data(self.etrr.key)
 
         # Remember source and destination of the outgoing register
         self.sent_from = None
@@ -134,20 +134,20 @@ class MapRegister(object):
     def send(self):
         if not self.nat_info:
             # Plain Map_Register
-            logger.debug(u"Sending Map-Register for {0} to Map-Server {1}".format(self.prefix, self.msr.map_server))
+            logger.debug(u"Sending Map-Register for {0} to Map-Server {1}".format(self.prefix, self.etrr.map_server))
             self.sent_from, self.sent_to = send_message(message=self.map_register,
                                                         my_sockets=self.control_plane_sockets,
-                                                        destinations=[self.msr.map_server],
+                                                        destinations=[self.etrr.map_server],
                                                         port=4342)
         else:
-            logger.debug(u"Sending NATT Map-Register for {0} to Map-Server {1}".format(self.prefix, self.msr.map_server))
+            logger.debug(u"Sending NATT Map-Register for {0} to Map-Server {1}".format(self.prefix, self.etrr.map_server))
 
             # Create an IP packet
-            if self.msr.map_server.version != self.nat_info.private_etr_rloc.version:
+            if self.etrr.map_server.version != self.nat_info.private_etr_rloc.version:
                 logger.error("Address family mismatch between local RLOC and Map-Server")
                 return
 
-            if self.msr.map_server.version == 4:
+            if self.etrr.map_server.version == 4:
                 ip_packet = IPv4Packet()
             else:
                 ip_packet = IPv6Packet()
@@ -155,7 +155,7 @@ class MapRegister(object):
             # Fill the packet
             ip_packet.ttl = 63
             ip_packet.source = self.nat_info.private_etr_rloc
-            ip_packet.destination = self.msr.map_server
+            ip_packet.destination = self.etrr.map_server
 
             # UDP payload
             inner_udp = UDPMessage(source_port=4342,
@@ -179,7 +179,7 @@ class MapRegister(object):
     def set_notify_if_matches(self, source, notify):
         assert isinstance(notify, MapNotifyMessage)
 
-        if source != self.msr.map_server \
+        if source != self.etrr.map_server \
         or notify.nonce != self.map_register.nonce:
             # Not for us
             return False
@@ -194,7 +194,7 @@ class MapRegister(object):
             logger.error("Cannot validate a MapNotify message without actually receiving it")
             return False
 
-        if not self.notify.verify_authentication_data(self.msr.key):
+        if not self.notify.verify_authentication_data(self.etrr.key):
             logger.debug(u"MapNotify authentication data is not valid")
             return False
 
@@ -271,31 +271,37 @@ class MapRegister(object):
 
 
 class MSRThread(threading.Thread):
-    def __init__(self, etrnode, msr):
-        assert(isinstance(etrnode, ETRNode))
-        assert(isinstance(msr, MapServerRegistration))
+    def __init__(self, etr_node, etrr):
+        assert(isinstance(etr_node, ETRNode))
+        assert(isinstance(etrr, ETRRegistration))
 
         super(MSRThread, self).__init__()
 
-        self.etrnode = weakref.proxy(etrnode)
-        self.msr = msr
+        # Thread properties
+        self.name = 'ETR-{0}-{1}'.format(etr_node.prefix, etrr.map_server)
+        self.daemon = True
+
+        # We need our own logger. The global one might disappear on shutdown
+        self.logger = logging.getLogger(__name__)
+
+        # Store our state
+        self.etr_node = weakref.proxy(etr_node)
+        self.etrr = etrr
 
         self.need_new_registration = False
 
-        self.name = '{0}-{1}'.format(etrnode.prefix, msr.map_server)
-        self.daemon = True
-
+        # Shutdown flag
         self._stop_event = threading.Event()
 
     def get_nat_info(self):
         # Check if we are forced off
-        if self.msr.use_rtr is False:
-            logger.debug(u"MSRThread {0} had RTR usage disabled".format(self.name))
+        if self.etrr.use_rtr is False:
+            self.logger.debug(u"MSRThread {0} had RTR usage disabled".format(self.name))
             return None
 
         # Start with sending out an InfoRequest
-        info_req = InfoRequest(self.etrnode.prefix, self.msr, self.etrnode.control_plane_sockets)
-        self.etrnode.outstanding_info_requests.append(info_req)
+        info_req = InfoRequest(self.etr_node.prefix, self.etrr, self.etr_node.control_plane_sockets)
+        self.etr_node.outstanding_info_requests.append(info_req)
 
         for remaining_attempts in [2, 1, 0]:
             # Send it
@@ -311,15 +317,15 @@ class MSRThread(threading.Thread):
                 break
 
             if remaining_attempts > 0:
-                logger.info("MSRThread {0} didn't receive answer to InfoRequest, retrying...".format(self.name))
+                self.logger.info("MSRThread {0} didn't receive answer to InfoRequest, retrying...".format(self.name))
 
         # Clean up
-        self.etrnode.outstanding_info_requests.remove(info_req)
+        self.etr_node.outstanding_info_requests.remove(info_req)
 
         if not info_req.reply_received.is_set():
-            logger.error("MapServer {0} doesn't answer to InfoRequests for prefix {1}"
-                         ", assuming no NAT".format(self.msr.map_server,
-                                                    self.etrnode.prefix))
+            self.logger.error("MapServer {0} doesn't answer to InfoRequests for prefix {1}"
+                              ", assuming no NAT".format(self.etrr.map_server,
+                                                         self.etr_node.prefix))
             reply = None
             behind_nat = False
         else:
@@ -328,19 +334,19 @@ class MSRThread(threading.Thread):
                           reply.etr_port != 4342)
 
         if not behind_nat:
-            logger.info("No NAT detected between us at {0} and MapServer {1}".format(info_req.sent_from[0],
-                                                                                     info_req.sent_to[0]))
-            if self.msr.use_rtr is True:
+            self.logger.info("No NAT detected between us at {0} and MapServer {1}".format(info_req.sent_from[0],
+                                                                                          info_req.sent_to[0]))
+            if self.etrr.use_rtr is True:
                 if reply:
-                    logger.info("Forcing use of RTR, even though no NAT is detected")
+                    self.logger.info("Forcing use of RTR, even though no NAT is detected")
                     behind_nat = True
                 else:
-                    logger.error("Cannot force use of RTR, no answer to InfoRequest received")
+                    self.logger.error("Cannot force use of RTR, no answer to InfoRequest received")
 
         else:
-            logger.info("NAT between us at {0} and MapServer {1} (it sees {2})".format(reply.private_etr_rloc,
-                                                                                       reply.map_server_rloc,
-                                                                                       reply.global_etr_rloc))
+            self.logger.info("NAT between us at {0} and MapServer {1} (it sees {2})".format(reply.private_etr_rloc,
+                                                                                            reply.map_server_rloc,
+                                                                                            reply.global_etr_rloc))
 
         if not behind_nat:
             return None
@@ -350,16 +356,16 @@ class MSRThread(threading.Thread):
     def register(self, nat_info, force_map_notify=False):
         # Determine the locators
         my_rtrs = nat_info and nat_info.rtr_rlocs or []
-        locators = self.etrnode.get_etr_locators(local_sockets=self.etrnode.control_plane_sockets,
-                                                 tentative_rtrs=my_rtrs)
+        locators = self.etr_node.get_etr_locators(local_sockets=self.etr_node.control_plane_sockets,
+                                                  tentative_rtrs=my_rtrs)
 
         # Create the MapRegister
-        map_reg = MapRegister(prefix=self.etrnode.prefix,
-                              msr=self.msr,
+        map_reg = MapRegister(prefix=self.etr_node.prefix,
+                              etrr=self.etrr,
                               locators=locators,
                               nat_info=nat_info,
-                              control_plane_sockets=self.etrnode.control_plane_sockets,
-                              data_plane_sockets=self.etrnode.data_plane_sockets,
+                              control_plane_sockets=self.etr_node.control_plane_sockets,
+                              data_plane_sockets=self.etr_node.data_plane_sockets,
                               want_map_notify=force_map_notify or (random.randint(0, 10) == 0))
 
         if not map_reg.want_map_notify:
@@ -368,7 +374,7 @@ class MSRThread(threading.Thread):
             return True
 
         # Store it as outstanding
-        self.etrnode.outstanding_map_registrations.append(map_reg)
+        self.etr_node.outstanding_map_registrations.append(map_reg)
 
         for remaining_attempts in [2, 1, 0]:
             # Send it
@@ -384,23 +390,23 @@ class MSRThread(threading.Thread):
                 break
 
             if remaining_attempts > 0:
-                logger.info("MSRThread {0} didn't receive MapNotify for MapRegister, retrying...".format(self.name))
+                self.logger.info("MSRThread {0} didn't receive MapNotify for MapRegister, retrying...".format(self.name))
 
         # Clean up
-        self.etrnode.outstanding_map_registrations.remove(map_reg)
+        self.etr_node.outstanding_map_registrations.remove(map_reg)
 
         if map_reg.notify_received.is_set():
             # Check the content
             if not map_reg.notify_content_ok():
-                logger.error("The received MapNotify content does not match the MapRegister we sent")
+                self.logger.error("The received MapNotify content does not match the MapRegister we sent")
                 return False
 
             # All good
             return True
 
         # Bad!
-        logger.error("MapServer {0} doesn't answer to MapNotify requests for prefix {1}".format(self.msr.map_server,
-                                                                                                self.etrnode.prefix))
+        self.logger.error("MapServer {0} doesn't answer to MapNotify requests for prefix {1}".format(self.etrr.map_server,
+                                                                                                     self.etr_node.prefix))
         return False
 
     def run(self):
@@ -409,59 +415,62 @@ class MSRThread(threading.Thread):
         last_registration_was_ok = False
         try:
             while True:
-                # Check if we need to stop
-                if self._stop_event.is_set():
-                    return
+                try:
+                    # Check if we need to stop
+                    if self._stop_event.is_set():
+                        return
 
-                # Do we need to refresh our NAT detection
-                now = time.time()
+                    # Do we need to refresh our NAT detection
+                    now = time.time()
 
-                if not last_registration_was_ok \
-                or last_nat_info + (15 * 60) < now:
-                    # See if we are going to use RTRs
-                    nat_info = self.get_nat_info()
-                    last_nat_info = now
+                    if not last_registration_was_ok \
+                    or last_nat_info + (15 * 60) < now:
+                        # See if we are going to use RTRs
+                        nat_info = self.get_nat_info()
+                        last_nat_info = now
 
-                    # Force a Map-Notify by pretending the last registration was not ok
-                    last_registration_was_ok = False
+                        # Force a Map-Notify by pretending the last registration was not ok
+                        last_registration_was_ok = False
 
-                if not last_registration_was_ok \
-                or self.need_new_registration \
-                or last_registration + 60 < now:
-                    # Reset the flag first to prevent race conditions
-                    self.need_new_registration = False
+                    if not last_registration_was_ok \
+                    or self.need_new_registration \
+                    or last_registration + 60 < now:
+                        # Reset the flag first to prevent race conditions
+                        self.need_new_registration = False
 
-                    # Register in the Map-Server
-                    last_registration_was_ok = self.register(nat_info=nat_info,
-                                                             force_map_notify=not last_registration_was_ok)
-                    last_registration = now
+                        # Register in the Map-Server
+                        last_registration_was_ok = self.register(nat_info=nat_info,
+                                                                 force_map_notify=not last_registration_was_ok)
+                        last_registration = now
 
-                    if nat_info:
-                        # Let the other parts of the code know we have registered through NAT
-                        self.etrnode.set_rtrs(self.msr, nat_info.rtr_rlocs)
-                    else:
-                        # Clear our RTRs in case we set them previously
-                        self.etrnode.set_rtrs(self.msr, [])
+                        if nat_info:
+                            # Let the other parts of the code know we have registered through NAT
+                            self.etr_node.set_rtrs(self.etrr, nat_info.rtr_rlocs)
+                        else:
+                            # Clear our RTRs in case we set them previously
+                            self.etr_node.set_rtrs(self.etrr, [])
+                except:
+                    self.logger.exception("MSRThread {0} caught an unexpected exception: trying again in a bit".format(self.name))
 
                 # Sleep a bit, but watch the stop event
                 self._stop_event.wait(5.0)
 
         except weakref.ReferenceError:
-            logging.info("MSRThread {0} does not have an ETRNode anymore: stopping".format(self.name))
+            self.logger.info("MSRThread {0} does not have an ETRNode anymore: stopping".format(self.name))
 
     def stop(self):
-        logging.debug("MSRThread {0} asked to stop".format(self.name))
+        self.logger.debug("MSRThread {0} asked to stop".format(self.name))
         self._stop_event.set()
 
 
 class ETRNode(AbstractNode):
-    def __init__(self, prefix, locators=None, map_servers=None):
+    def __init__(self, prefix, locators=None, registrations=None):
         super(ETRNode, self).__init__(prefix)
 
         self._locators = set()
 
-        # Dictionaries with an MapServerRegistration as key
-        self._msr_threads = {}
+        # Dictionaries with an ETRRegistration as key
+        self._etrr_threads = {}
         self._rtrs = {}
 
         self.outstanding_info_requests = []
@@ -471,22 +480,22 @@ class ETRNode(AbstractNode):
         for locator in locators:
             self.add_locator(locator)
 
-        map_servers = map_servers or []
-        for msr in map_servers:
-            self.add_map_server_registration(msr)
+        registrations = registrations or []
+        for etrr in registrations:
+            self.add_etr_registration(etrr)
 
     def __del__(self):
-        for msr_thread in self._msr_threads.values():
-            msr_thread.stop()
+        for etrr_thread in self._etrr_threads.values():
+            etrr_thread.stop()
 
     def set_sockets(self, control_plane_sockets, data_plane_sockets):
         super(ETRNode, self).set_sockets(control_plane_sockets, data_plane_sockets)
 
         if self.control_plane_sockets:
             # Make sure the MSR threads are started
-            for msr_thread in self._msr_threads.values():
-                if not msr_thread.is_alive():
-                    msr_thread.start()
+            for etrr_thread in self._etrr_threads.values():
+                if not etrr_thread.is_alive():
+                    etrr_thread.start()
 
     def add_locator(self, locator):
         # Don't add duplicates
@@ -510,36 +519,36 @@ class ETRNode(AbstractNode):
     def _locators_have_changed(self):
         # Signal the threads that new registration is required
         logger.debug("Locators have changed, telling all threads to send new registration")
-        for msr_thread in self._msr_threads.values():
-            msr_thread.need_new_registration = True
+        for etrr_thread in self._etrr_threads.values():
+            etrr_thread.need_new_registration = True
 
-    def add_map_server_registration(self, msr):
+    def add_etr_registration(self, etrr):
         # Don't add duplicate MSRs
-        if msr in self._msr_threads:
-            logger.debug("Not adding the same MSR {0!r} twice".format(msr))
+        if etrr in self._etrr_threads:
+            logger.debug("Not adding the same MSR {0!r} twice".format(etrr))
             return
 
-        msr_thread = MSRThread(self, msr)
+        etrr_thread = MSRThread(self, etrr)
         if self.control_plane_sockets:
-            msr_thread.start()
-        self._msr_threads[msr] = msr_thread
+            etrr_thread.start()
+        self._etrr_threads[etrr] = etrr_thread
 
-    def remove_map_server_registration(self, msr):
-        msr_thread = self._msr_threads.get(msr)
-        if not msr_thread:
-            logger.warning(u"{0!r} MapServerRegistration {1!r} not found".format(self, msr))
+    def remove_etr_registration(self, etrr):
+        etrr_thread = self._etrr_threads.get(etrr)
+        if not etrr_thread:
+            logger.warning(u"{0!r} ETRRegistration {1!r} not found".format(self, etrr))
             return
 
-        logger.debug(u"{0!r} stopping {1!r}".format(self, msr))
-        msr_thread.stop()
-        del self._msr_threads[msr]
+        logger.debug(u"{0!r} stopping {1!r}".format(self, etrr))
+        etrr_thread.stop()
+        del self._etrr_threads[etrr]
 
-    def set_rtrs(self, msr, rtrs):
-        old_rtrs = self._rtrs.get(msr, [])
-        self._rtrs[msr] = set(rtrs)
+    def set_rtrs(self, etrr, rtrs):
+        old_rtrs = self._rtrs.get(etrr, [])
+        self._rtrs[etrr] = set(rtrs)
 
         # Signal a locator change when the RTRs change
-        if old_rtrs != self._rtrs[msr]:
+        if old_rtrs != self._rtrs[etrr]:
             self._locators_have_changed()
 
     def get_rtrs(self):

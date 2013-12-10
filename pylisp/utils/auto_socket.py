@@ -48,6 +48,14 @@ class AutoUDPSocket(object):
             logger.warn("Rebinding socket on port {0} from {1} to {2}".format(self.port, self._sock_address,
                                                                               self.address))
 
+        # Release the existing socket
+        if self._sock is not None:
+            self._sock.close()
+            self._sock = None
+
+        # Store an empty address
+        self._sock_address = isinstance(self.address, IPv4Address) and IPv4Address(0) or IPv6Address(0)
+
         # Only bind when address is not loopback, link-local, wild-card or multicast
         if not (self.address.is_loopback or
                 self.address.is_link_local or
@@ -57,15 +65,20 @@ class AutoUDPSocket(object):
             try:
                 self._sock = socket.socket(self.family, socket.SOCK_DGRAM, socket.SOL_UDP)
                 self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
                 self._sock.bind((unicode(self.address), self.port))
 
                 # Convert to a real IP address (in case it is an AutoAddress)
                 self._sock_address = ip_address(unicode(self.address))
 
                 return True
-            except socket.error:
+            except socket.error, e:
+                logger.exception('Could not bind socket: {0}'.format(e.message))
                 pass
+        else:
+            logger.error('Trying to bind socket to unacceptable address {0}'.format(unicode(self.address)))
 
+        # Resetting data, just to be sure
         if self._sock is not None:
             self._sock.close()
             self._sock = None

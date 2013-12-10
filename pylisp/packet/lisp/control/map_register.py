@@ -5,14 +5,18 @@ Created on 6 jan. 2013
 '''
 from base import ControlMessage
 from bitstring import ConstBitStream, BitArray, Bits
-from pylisp.packet.lisp.control import type_registry, MapRegisterRecord, \
-    KEY_ID_HMAC_SHA_1_96, KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE
+from pylisp.packet.lisp.control import type_registry, MapRegisterRecord, KEY_ID_HMAC_SHA_1_96, KEY_ID_HMAC_SHA_256_128, KEY_ID_NONE
 import hashlib
 import hmac
+import logging
 import numbers
 
 
 __all__ = ['MapRegisterMessage']
+
+
+# Get the logger
+logger = logging.getLogger(__name__)
 
 
 class MapRegisterMessage(ControlMessage):
@@ -20,7 +24,7 @@ class MapRegisterMessage(ControlMessage):
     message_type = 3
 
     def __init__(self, proxy_map_reply=False, for_rtr=False, want_map_notify=False,
-                 key_id=0, authentication_data='',
+                 nonce='\x00\x00\x00\x00\x00\x00\x00\x00', key_id=0, authentication_data='',
                  records=None, xtr_id=0, site_id=0):
         '''
         Constructor
@@ -31,7 +35,7 @@ class MapRegisterMessage(ControlMessage):
         self.proxy_map_reply = proxy_map_reply
         self.for_rtr = for_rtr
         self.want_map_notify = want_map_notify
-        self.nonce = '\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.nonce = nonce
         self.key_id = key_id
         self.authentication_data = authentication_data
         self.records = records or []
@@ -119,7 +123,9 @@ class MapRegisterMessage(ControlMessage):
         # nonce field is not currently used for any security function but
         # may be in the future as part of an anti-replay solution.
         if self.nonce != '\x00\x00\x00\x00\x00\x00\x00\x00':
-            raise ValueError('Invalid nonce (must be 0 for Map-Register)')
+            # Cisco devices seems to fill it in even if it should be 0
+            pass
+            # raise ValueError('Invalid nonce (must be 0 for Map-Register): {0}'.format(self.nonce.encode('hex')))
 
         # Key ID:  A configured ID to find the configured Message
         # Authentication Code (MAC) algorithm and key value used for the

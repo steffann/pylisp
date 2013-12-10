@@ -77,6 +77,7 @@ class DDTReferralNode(AbstractNode):
 
         return referral
 
+
 def send_answer(received_message, referral):
     map_request = received_message.inner_message
 
@@ -140,6 +141,50 @@ def send_not_authoritative(received_message):
     send_answer(received_message, referral)
 
 
+def send_ms_ack(received_message, ms_prefix, other_map_servers=None):
+    logger.debug("Sending MS_ACK response for message %d", received_message.message_nr)
+
+    other_map_servers = other_map_servers or []
+
+    locators = []
+    for ddt_node in other_map_servers:
+        locator = LocatorRecord(priority=0, weight=0,
+                                m_priority=0, m_weight=0,
+                                reachable=True, locator=ddt_node)
+        locators.append(locator)
+
+    # MapServer forwarded the request
+    referral = MapReferralRecord(ttl=1440,
+                                 action=MapReferralRecord.ACT_MS_NOT_REGISTERED,
+                                 incomplete=(len(locators) == 0),
+                                 eid_prefix=ms_prefix,
+                                 locator_records=locators)
+
+    send_answer(received_message, referral)
+
+
+def send_ms_not_registered(received_message, ms_prefix, other_map_servers=None):
+    logger.debug("Sending MS_NOT_REGISTERED response for message %d", received_message.message_nr)
+
+    other_map_servers = other_map_servers or []
+
+    locators = []
+    for ddt_node in other_map_servers:
+        locator = LocatorRecord(priority=0, weight=0,
+                                m_priority=0, m_weight=0,
+                                reachable=True, locator=ddt_node)
+        locators.append(locator)
+
+    # No data in the MapServer
+    referral = MapReferralRecord(ttl=1,
+                                 action=MapReferralRecord.ACT_MS_NOT_REGISTERED,
+                                 incomplete=(len(locators) == 0),
+                                 eid_prefix=ms_prefix,
+                                 locator_records=locators)
+
+    send_answer(received_message, referral)
+
+
 def handle_ddt_map_request(received_message, control_plane_sockets, data_plane_sockets):
     ecm = received_message.message
 
@@ -159,7 +204,7 @@ def handle_ddt_map_request(received_message, control_plane_sockets, data_plane_s
     more_specific_nodes = []
     for tree_node in tree_nodes[::-1]:
         # Mark that we are authoritative for this request
-        if not auth_node and isinstance(tree_node, (AuthContainerNode, MapServerNode)):
+        if isinstance(tree_node, (AuthContainerNode, MapServerNode)):
             auth_node = tree_node
 
         # Do we already have a handler?
@@ -199,10 +244,16 @@ def handle_ddt_map_request(received_message, control_plane_sockets, data_plane_s
 
         # Let he MapServerNode send the Map-Request to the ETR or answer as a proxy
         handled = handling_node.handle_map_request(received_message, control_plane_sockets, data_plane_sockets)
+
+        # Send DDT response
         if handled:
-            send_ms_ack(received_message)
+            send_ms_ack(received_message=received_message,
+                        ms_prefix=handling_node.prefix,
+                        other_map_servers=(auth_node and auth_node.ddt_nodes or []))
         else:
-            send_ms_not_registered(received_message)
+            send_ms_not_registered(received_message=received_message,
+                                   ms_prefix=handling_node.prefix,
+                                   other_map_servers=(auth_node and auth_node.ddt_nodes or []))
 
     elif auth_node:
         # We are authoritative and no matching targets, we seem to have a hole

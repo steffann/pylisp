@@ -3,7 +3,7 @@ Created on 1 jun. 2013
 
 @author: sander
 '''
-from ipaddress import ip_address
+from ipaddress import ip_address, IPv4Address, IPv6Address
 from pylisp.application.lispd.address_tree.container_node import ContainerNode
 import logging
 
@@ -24,5 +24,7 @@ class AuthContainerNode(ContainerNode):
         self.ddt_nodes = set()
 
         for ddt_node in ddt_nodes or []:
-            ddt_node = ip_address(unicode(ddt_node))
+            if not isinstance(ddt_node, (IPv4Address, IPv6Address)):
+                ddt_node = ip_address(unicode(ddt_node))
+
             self.ddt_nodes.add(ddt_node)

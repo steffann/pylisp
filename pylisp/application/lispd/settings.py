@@ -49,6 +49,9 @@ class Settings(object):
         self.XTR_ID = id_generators.get_xtr_id()
         self.SITE_ID = 0
 
+        # Do we process data?
+        self.PROCESS_DATA = True
+
         if not self.only_defaults:
             # Apply the config
             self.apply_config_files()
