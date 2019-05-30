@@ -1,3 +1,9 @@
+ABANDONED
+=========
+
+This project has been abandoned. If anyone would like to take
+over please contact sander@steffann.nl.
+
 pylisp
 ======
 
